@@ -150,7 +150,37 @@ async def process_stream():
 Check out the `examples` directory for more detailed examples:
 
 - `function_calling_examples.py`: Basic function calling examples
+  - Function prompt generation
+  - Stream parsing
+  - Multiple function calls handling
+  - API result management
+
 - `async_function_calling_examples.py`: Async streaming examples
+  - Async stream processing
+  - Concurrent function calls
+  - Error handling in async context
+
+- `mcp_client_example.py`: MCP client integration examples
+  - Basic MCP client setup
+  - Function registration
+  - Tool calling implementation
+
+- `async_mcp_client_example.py`: Async MCP client examples
+  - Async MCP client setup
+  - Concurrent tool execution
+  - Async result handling
+
+Each example file includes detailed comments and demonstrates different aspects of the library's functionality. Run the examples to see the library in action:
+
+```bash
+# Run basic examples
+python examples/function_calling_examples.py
+python examples/mcp_client_example.py
+
+# Run async examples
+python examples/async_function_calling_examples.py
+python examples/async_mcp_client_example.py
+```
 
 ## Notes
 

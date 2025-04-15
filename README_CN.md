@@ -136,7 +136,37 @@ async def process_stream():
 查看 `examples` 目录获取更详细的示例：
 
 - `function_calling_examples.py`：基本函数调用示例
+  - 函数提示生成
+  - 流式解析
+  - 多函数调用处理
+  - API 结果管理
+
 - `async_function_calling_examples.py`：异步流式处理示例
+  - 异步流处理
+  - 并发函数调用
+  - 异步上下文中的错误处理
+
+- `mcp_client_example.py`：MCP 客户端集成示例
+  - 基本 MCP 客户端设置
+  - 函数注册
+  - 工具调用实现
+
+- `async_mcp_client_example.py`：异步 MCP 客户端示例
+  - 异步 MCP 客户端设置
+  - 并发工具执行
+  - 异步结果处理
+
+每个示例文件都包含详细的注释，展示了库的不同功能特性。运行示例以查看库的实际效果：
+
+```bash
+# 运行基本示例
+python examples/function_calling_examples.py
+python examples/mcp_client_example.py
+
+# 运行异步示例
+python examples/async_function_calling_examples.py
+python examples/async_mcp_client_example.py
+```
 
 ## 注意事项
 
