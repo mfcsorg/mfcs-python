@@ -1,0 +1,13 @@
+include LICENSE
+include README.md
+include pyproject.toml
+include src/mfcs/config/*.yaml
+include src/mfcs/config/*.yml
+include src/mfcs/config/*.json
+include prompt_templates/*.md
+include .env.example
+
+global-exclude .env
+global-exclude *.pyc
+global-exclude __pycache__
+global-exclude .DS_Store 
