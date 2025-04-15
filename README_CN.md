@@ -29,7 +29,7 @@ pip install -e .
 ### 1. 生成函数调用提示模板
 
 ```python
-from mfcs.function_calling import FunctionCallingPromptGenerator
+from mfcs.function_calling.function_prompt import FunctionPromptGenerator
 
 # 定义函数模式
 functions = [
@@ -56,13 +56,13 @@ functions = [
 ]
 
 # 生成提示模板
-template = FunctionCallingPromptGenerator.generate_function_prompt(functions)
+template = FunctionPromptGenerator.generate_function_prompt(functions)
 ```
 
 ### 2. 解析输出中的函数调用
 
 ```python
-from mfcs.function_calling import StreamParser
+from mfcs.function_calling.response_parser import ResponseParser
 
 # 函数调用示例
 output = """
@@ -82,38 +82,20 @@ output = """
 """
 
 # 解析函数调用
-parser = StreamParser()
+parser = ResponseParser()
 content, tool_calls = parser.parse_output(output)
 print(f"内容: {content}")
 print(f"函数调用: {tool_calls}")
 ```
 
-### 3. 处理流式输出
+### 3. 异步流式处理与函数调用
 
 ```python
-from mfcs.function_calling import StreamParser
-
-# 处理流式输出
-parser = StreamParser()
-
-# 在流式循环中
-for chunk in stream:
-    content, tool_calls = parser.parse_stream_output(chunk)
-    if content:
-        print(content, end="", flush=True)
-    if tool_calls:
-        for tool_call in tool_calls:
-            print(f"函数 {tool_call['name']} 被调用，参数: {tool_call['arguments']}")
-```
-
-### 4. 异步流式处理与函数调用
-
-```python
-from mfcs.function_calling import StreamParser, ApiResultManager
-import asyncio
+from mfcs.function_calling.response_parser import ResponseParser
+from mfcs.function_calling.api_result_manager import ApiResultManager
 
 async def process_stream():
-    parser = StreamParser()
+    parser = ResponseParser()
     api_results = ApiResultManager()
     
     async for chunk in stream:
@@ -122,13 +104,12 @@ async def process_stream():
             print(content, end="", flush=True)
         if tool_calls:
             for tool_call in tool_calls:
-                # 处理函数调用
+                # 处理函数调用并存储结果
                 result = await process_function_call(tool_call)
-                # 添加结果
-                api_results.add_result(tool_call['call_id'], tool_call['name'], result)
+                api_results.add_api_result(tool_call['call_id'], tool_call['name'], result)
     
-    # 获取所有结果
-    results = api_results.get_api_results()
+    # 获取所有处理结果
+    return api_results.get_api_results()
 ```
 
 ## 示例
@@ -137,14 +118,13 @@ async def process_stream():
 
 - `function_calling_examples.py`：基本函数调用示例
   - 函数提示生成
-  - 流式解析
-  - 多函数调用处理
+  - 函数调用解析
   - API 结果管理
 
 - `async_function_calling_examples.py`：异步流式处理示例
-  - 异步流处理
-  - 并发函数调用
-  - 异步上下文中的错误处理
+  - 异步流式处理最佳实践
+  - 并发函数调用处理
+  - 异步错误处理和超时控制
 
 - `mcp_client_example.py`：MCP 客户端集成示例
   - 基本 MCP 客户端设置
@@ -152,11 +132,11 @@ async def process_stream():
   - 工具调用实现
 
 - `async_mcp_client_example.py`：异步 MCP 客户端示例
-  - 异步 MCP 客户端设置
-  - 并发工具执行
-  - 异步结果处理
+  - 异步 MCP 客户端配置
+  - 异步工具调用实现
+  - 并发任务处理
 
-每个示例文件都包含详细的注释，展示了库的不同功能特性。运行示例以查看库的实际效果：
+运行示例以查看库的实际效果：
 
 ```bash
 # 运行基本示例
@@ -170,12 +150,15 @@ python examples/async_mcp_client_example.py
 
 ## 注意事项
 
-- 异步功能需要 Python 3.7+ 版本
+- 异步功能需要 Python 3.8+ 版本
 - 请确保安全处理 API 密钥和敏感信息
 - 在生产环境中，请将模拟的 API 调用替换为实际实现
 - 遵循提示模板中的工具调用规则
 - 为每个函数调用使用唯一的 call_id
 - 为每个函数调用提供清晰的说明
+- 异步流式处理时注意错误处理和资源释放
+- 使用 `ApiResultManager` 管理多个函数调用的结果
+- 在异步上下文中正确处理异常和超时
 
 ## 系统要求
 
