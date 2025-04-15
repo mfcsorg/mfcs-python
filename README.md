@@ -21,6 +21,7 @@ A Python library for handling function calling in Large Language Models (LLMs).
 ## Installation
 
 ```bash
+# Install MFCS library
 pip install -e .
 ```
 
@@ -36,6 +37,15 @@ cp .env.example .env
 # OpenAI API Configuration
 OPENAI_API_KEY=your-api-key-here
 OPENAI_API_BASE=your-api-base-url-here
+```
+
+## Example Installation
+
+To run the example code, you need to install additional dependencies:
+
+```bash
+cd examples
+pip install -r requirements.txt
 ```
 
 ## Usage

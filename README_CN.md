@@ -21,7 +21,31 @@
 ## 安装
 
 ```bash
+# 安装 MFCS 库
 pip install -e .
+```
+
+## 配置
+
+1. 复制 `.env.example` 到 `.env`:
+```bash
+cp .env.example .env
+```
+
+2. 编辑 `.env` 并设置您的环境变量:
+```bash
+# OpenAI API Configuration
+OPENAI_API_KEY=your-api-key-here
+OPENAI_API_BASE=your-api-base-url-here
+```
+
+## 示例安装
+
+要运行示例代码，需要安装额外的依赖：
+
+```bash
+cd examples
+pip install -r requirements.txt
 ```
 
 ## 使用方法
