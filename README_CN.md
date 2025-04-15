@@ -21,8 +21,7 @@
 ## 安装
 
 ```bash
-# 安装 MFCS 库
-pip install -e .
+pip install mfcs
 ```
 
 ## 配置
@@ -41,7 +40,7 @@ OPENAI_API_BASE=your-api-base-url-here
 
 ## 示例安装
 
-要运行示例代码，需要安装额外的依赖：
+要运行示例代码，需要安装额外的依赖。示例代码位于 `examples` 目录，每个示例都有其特定的依赖要求：
 
 ```bash
 cd examples

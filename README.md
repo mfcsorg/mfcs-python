@@ -21,8 +21,7 @@ A Python library for handling function calling in Large Language Models (LLMs).
 ## Installation
 
 ```bash
-# Install MFCS library
-pip install -e .
+pip install mfcs
 ```
 
 ## Configuration
@@ -41,7 +40,7 @@ OPENAI_API_BASE=your-api-base-url-here
 
 ## Example Installation
 
-To run the example code, you need to install additional dependencies:
+To run the example code, you need to install additional dependencies. The examples are located in the `examples` directory, and each example has its specific dependency requirements:
 
 ```bash
 cd examples
