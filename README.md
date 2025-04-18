@@ -244,14 +244,46 @@ Check out the `examples` directory for more detailed examples:
   - Concurrent function call handling
   - Async error handling and timeout control
 
+- `mcp_client_example.py`: Model Control Protocol examples
+  - MCP client implementation
+  - MCP tool management
+  - MCP response handling
+
+- `async_mcp_client_example.py`: Async MCP examples
+  - Async MCP client implementation
+  - Async MCP tool management
+  - Async MCP response handling
+
+- `memory_function_examples.py`: Memory function examples
+  - Memory prompt generation
+  - Memory operations
+  - Memory context management
+
+- `async_memory_function_examples.py`: Async memory examples
+  - Async memory operations
+  - Async memory context management
+  - Async memory persistence
+
 Run the examples to see the library in action:
 
 ```bash
 # Run basic examples
-python examples/function_calling_examples.py
+python function_calling_examples.py
 
 # Run async examples
-python examples/async_function_calling_examples.py
+python async_function_calling_examples.py
+
+# Run MCP examples
+python mcp_client_example.py
+
+# Run async MCP examples
+python async_mcp_client_example.py
+
+# Run memory examples
+python memory_function_examples.py
+
+# Run async memory examples
+python async_memory_function_examples.py
 ```
 
 ## Notes

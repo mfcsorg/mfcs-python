@@ -244,14 +244,46 @@ memory_result = result_manager.get_memory_result("memory_1")
   - 并发函数调用处理
   - 异步错误处理和超时控制
 
+- `mcp_client_example.py`：模型控制协议示例
+  - MCP 客户端实现
+  - MCP 工具管理
+  - MCP 响应处理
+
+- `async_mcp_client_example.py`：异步 MCP 示例
+  - 异步 MCP 客户端实现
+  - 异步 MCP 工具管理
+  - 异步 MCP 响应处理
+
+- `memory_function_examples.py`：记忆函数示例
+  - 记忆提示生成
+  - 记忆操作
+  - 记忆上下文管理
+
+- `async_memory_function_examples.py`：异步记忆示例
+  - 异步记忆操作
+  - 异步记忆上下文管理
+  - 异步记忆持久化
+
 运行示例以查看库的实际效果：
 
 ```bash
 # 运行基本示例
-python examples/function_calling_examples.py
+python function_calling_examples.py
 
 # 运行异步示例
-python examples/async_function_calling_examples.py
+python async_function_calling_examples.py
+
+# 运行 MCP 示例
+python mcp_client_example.py
+
+# 运行异步 MCP 示例
+python async_mcp_client_example.py
+
+# 运行记忆示例
+python memory_function_examples.py
+
+# 运行异步记忆示例
+python async_memory_function_examples.py
 ```
 
 ## 注意事项
