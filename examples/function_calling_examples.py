@@ -1,25 +1,25 @@
 """Function calling examples.
 
-This module demonstrates how to use the function calling features of MFCS.
+This module demonstrates how to use function calling features of MFCS.
 It includes examples of:
-1. Generating function calling prompts
-2. Parsing function calls from text
-3. Using function calling with OpenAI
+1. Basic function calling
+2. Multiple function calls
+3. Function result handling
 """
 
 import os
 import json
-import openai
+from openai import OpenAI
 from dotenv import load_dotenv
-from mfcs.function_calling.function_prompt import FunctionPromptGenerator
-from mfcs.function_calling.response_parser import ResponseParser
-from mfcs.function_calling import ApiResultManager
+from mfcs.function_prompt import FunctionPromptGenerator
+from mfcs.response_parser import ResponseParser
+from mfcs.result_manager import ResultManager
 
 # Load environment variables
 load_dotenv()
 
 # Configure OpenAI
-client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"), base_url=os.getenv("OPENAI_API_BASE"))
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"), base_url=os.getenv("OPENAI_API_BASE"))
 
 # Define function schemas
 functions = [
@@ -64,86 +64,13 @@ functions = [
     }
 ]
 
-def example_generate_function_prompt() -> None:
-    """Example of generating function calling prompts.
+def example_basic_function_calling():
+    """Example of basic function calling.
     
-    This example shows how to generate function calling prompts
-    using the new FunctionPromptGenerator.
+    This example shows how to use function calling to process a single request
+    with potential function calls.
     """
-    print("\nExample 1: Generate Prompt Templates")
-    print("=" * 50)
-    
-    # Generate prompt template
-    template = FunctionPromptGenerator.generate_function_prompt(functions)
-    print("\nGenerated Template:")
-    print(template)
-    
-    # Example of how to use the template
-    print("\nExample Usage:")
-    print("When you need to call a function, use the following format:")
-    print("""
-<mfcs_call>
-<instructions>Search for information about Python programming</instructions>
-<call_id>1</call_id>
-<name>search_database</name>
-<parameters>
-{
-    "query": "Python programming",
-    "limit": 5
-}
-</parameters>
-</mfcs_call>
-    """)
-
-def example_parse_function_call() -> None:
-    """Example of parsing function calls from text.
-    
-    This example shows how to parse function calls from text
-    using the StreamParser.
-    """
-    print("\nExample 2: Parse Function Calls")
-    print("=" * 50)
-    
-    # Example text with a function call
-    text = """
-Here is some information about Python programming.
-
-<mfcs_call>
-<instructions>Search for information about Python programming</instructions>
-<call_id>1</call_id>
-<name>search_database</name>
-<parameters>
-{
-    "query": "Python programming",
-    "limit": 5
-}
-</parameters>
-</mfcs_call>
-
-Based on the search results, Python is a versatile programming language.
-"""
-    
-    # Parse the function call
-    parser = ResponseParser()
-    content, tool_calls = parser.parse_output(text)
-    
-    # Print the results
-    print("\nOriginal Text:")
-    print(text)
-    print("\nParsed Content:")
-    print(content)
-    print("\nParsed Tool Calls:")
-    for tool_call in tool_calls:
-        print(f"Function: {tool_call['name']}")
-        print(f"Arguments: {json.dumps(tool_call['arguments'], indent=2)}")
-
-def example_openai_function_calling() -> None:
-    """Example of using function calling with OpenAI.
-    
-    This example shows how to use function calling with OpenAI
-    to generate function calls.
-    """
-    print("\nExample 3: OpenAI Function Calling")
+    print("\nExample: Basic Function Calling")
     print("=" * 50)
     
     # Generate prompt template
@@ -159,106 +86,131 @@ def example_openai_function_calling() -> None:
             },
             {
                 "role": "user",
-                "content": "What's the weather like in New York and find information about Python programming"
+                "content": "What's the weather like in Tokyo and find information about Python programming"
             }
         ]
     )
     
-    # Get the response content
-    content = response.choices[0].message.content
+    # Initialize parser and result handler
+    response_parser = ResponseParser()
+    result_manager = ResultManager()
     
-    # Parse the function calls
-    parser = ResponseParser()
-    parsed_content, tool_calls = parser.parse_output(content)
+    # Parse the response
+    content, tool_calls, memory_calls = response_parser.parse_output(response.choices[0].message.content)
     
-    # Print the results
-    print("\nOpenAI Response:")
-    print(content)
-    print("\nParsed Content:")
-    print(parsed_content)
-    print("\nParsed Tool Calls:")
-    for tool_call in tool_calls:
-        print(f"Function: {tool_call['name']}")
-        print(f"Arguments: {json.dumps(tool_call['arguments'], indent=2)}")
+    # Print content (without function calls)
+    if content:
+        print("\nContent:")
+        print("-" * 30)
+        print(content)
+    
+    # Handle tool calls
+    if tool_calls:
+        print("\nTool Calls:")
+        print("-" * 30)
+        for tool_call in tool_calls:
+            print(f"Instructions: {tool_call.instructions}")
+            print(f"Call ID: {tool_call.call_id}")
+            print(f"Name: {tool_call.name}")
+            print(f"Arguments: {json.dumps(tool_call.arguments, indent=2)}")
+            
+            # Simulate tool execution (in real application, this would call actual tools)
+            result_manager.add_tool_result(
+                call_id=tool_call.call_id,
+                result={"status": "success", "data": f"Simulated data for {tool_call.name}"},
+                name=tool_call.name
+            )
+    
+    # Print results
+    print("\nTool Results:")
+    print(result_manager.get_tool_results())
 
-def main() -> None:
-    """Run function calling examples."""
-    # Example 1: Basic function calling
-    print("Example 1: Basic function calling")
+def example_multiple_function_calls():
+    """Example of handling multiple function calls.
     
-    # Generate function calling prompt
-    prompt_generator = FunctionPromptGenerator()
-    prompt = prompt_generator.generate_function_prompt(functions)
-    print("\nGenerated Prompt:")
-    print(prompt)
+    This example demonstrates how to handle multiple function calls in a single response.
+    """
+    print("\nExample: Multiple Function Calls")
+    print("=" * 50)
     
-    # Example response with function calls
-    response = """To provide you with the current weather in New York and information about Python programming, I will first fetch the weather details for New York and then search the database for relevant information on Python programming.
-<mfcs_call>
-<instructions>Fetching the current weather in New York</instructions>
-<call_id>1</call_id>
-<name>get_weather</name>
-<parameters>
-{
-  "location": "New York, NY",
-  "unit": "fahrenheit"
-}
-</parameters>
-</mfcs_call>
-<mfcs_call>
-<instructions>Searching for information about Python programming</instructions>
-<call_id>2</call_id>
-<name>search_database</name>
-<parameters>
-{
-  "query": "Python programming",
-  "limit": 5
-}
-</parameters>
-</mfcs_call>"""
+    # Generate prompt template
+    prompt_template = FunctionPromptGenerator.generate_function_prompt(functions)
     
-    # Parse response
-    parser = ResponseParser()
-    content, tool_calls = parser.parse_output(response)
-    
-    print("\nParsed Content:")
-    print("-" * 50)
-    print(content)
-    print("-" * 50)
-    
-    print("\nParsed Tool Calls:")
-    print("-" * 50)
-    for i, tool_call in enumerate(tool_calls, 1):
-        print(f"Tool Call #{i}:")
-        print(f"  Instructions: {tool_call['instructions']}")
-        print(f"  Call ID: {tool_call['call_id']}")
-        print(f"  Name: {tool_call['name']}")
-        print(f"  Arguments: {json.dumps(tool_call['arguments'], indent=2)}")
-        print("-" * 50)
-    
-    # Handle API results
-    api_manager = ApiResultManager()
-    
-    # Simulate API responses
-    api_manager.add_api_result("1", {
-        "temperature": 72,
-        "unit": "fahrenheit",
-        "description": "Partly cloudy"
-    }, "get_weather")
-    
-    api_manager.add_api_result("2", {
-        "results": [
-            "Python is a high-level programming language",
-            "Python supports multiple programming paradigms",
-            "Python has a large standard library"
+    # Create chat completion request
+    response = client.chat.completions.create(
+        model="qwen-plus-latest",
+        messages=[
+            {
+                "role": "system",
+                "content": f"You are a helpful assistant that can get weather information.\n{prompt_template}"
+            },
+            {"role": "user", "content": "What's the weather in New York and Tokyo?"}
         ]
-    }, "search_database")
+    )
     
-    # Get and display results
-    print("\nAPI Results:")
+    # Initialize parser and result handler
+    response_parser = ResponseParser()
+    result_manager = ResultManager()
+    
+    # Parse the response
+    content, tool_calls, memory_calls = response_parser.parse_output(response.choices[0].message.content)
+    
+    # Print content (without function calls)
+    if content:
+        print("\nContent:")
+        print("-" * 30)
+        print(content)
+    
+    # Handle tool calls
+    if tool_calls:
+        print("\nTool Calls:")
+        print("-" * 30)
+        for tool_call in tool_calls:
+            print(f"Instructions: {tool_call.instructions}")
+            print(f"Call ID: {tool_call.call_id}")
+            print(f"Name: {tool_call.name}")
+            print(f"Arguments: {json.dumps(tool_call.arguments, indent=2)}")
+            
+            # Simulate tool execution
+            result_manager.add_tool_result(
+                call_id=tool_call.call_id,
+                result={"status": "success", "data": f"Simulated data for {tool_call.name}"},
+                name=tool_call.name
+            )
+    
+    # Print final results
+    print("\nFinal Tool Results:")
+    print(result_manager.get_tool_results())
+
+def example_generate_prompt():
+    """Example of generating prompt templates.
+    
+    This example shows how to generate different types of prompt templates
+    for function calling.
+    """
+    print("\nExample: Generate Prompt Templates")
+    print("=" * 50)
+    
+    # Generate prompt template
+    prompt_template = FunctionPromptGenerator.generate_function_prompt(functions)
+    
+    print("\nGenerated Prompt Template:")
     print("-" * 50)
-    print(api_manager.get_api_results())
+    print(prompt_template)
     print("-" * 50)
+
+def main():
+    """Main function.
+    
+    Run the function calling examples.
+    """
+    print("Function Calling Examples")
+    print("=" * 50)
+    
+    # Run examples
+    example_generate_prompt()
+    example_basic_function_calling()
+    example_multiple_function_calls()
 
 if __name__ == "__main__":
     main() 

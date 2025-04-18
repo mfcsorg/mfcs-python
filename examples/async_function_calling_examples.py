@@ -11,9 +11,9 @@ import json
 import asyncio
 from openai import AsyncOpenAI
 from dotenv import load_dotenv
-from mfcs.function_calling.function_prompt import FunctionPromptGenerator
-from mfcs.function_calling.response_parser import ResponseParser
-from mfcs.function_calling.api_result_manager import ApiResultManager
+from mfcs.function_prompt import FunctionPromptGenerator
+from mfcs.response_parser import ResponseParser, ToolCall
+from mfcs.result_manager import ResultManager
 
 # Load environment variables
 load_dotenv()
@@ -94,7 +94,7 @@ async def example_async_streaming() -> None:
     
     # Initialize stream parser and result handler
     stream_parser = ResponseParser()
-    api_result_manager = ApiResultManager()
+    result_manager = ResultManager()
     
     print("\nStreaming Response:")
     print("-" * 30)
@@ -103,27 +103,27 @@ async def example_async_streaming() -> None:
     async for content, tool_call in stream_parser.parse_stream_output(stream):
         # Print parsed content (without function calls)
         if content:
-            print(f"Content: {content}")
+            print(f"Content: {content}", end="", flush=True)
         
         # Handle tool calls
-        if tool_call:
+        if tool_call and isinstance(tool_call, ToolCall):
             print(f"\nTool Call:")
-            print(f"Instructions: {tool_call['instructions']}")
-            print(f"Call ID: {tool_call['call_id']}")
-            print(f"Name: {tool_call['name']}")
-            print(f"Arguments: {json.dumps(tool_call['arguments'], indent=2)}")
+            print(f"Instructions: {tool_call.instructions}")
+            print(f"Call ID: {tool_call.call_id}")
+            print(f"Name: {tool_call.name}")
+            print(f"Arguments: {json.dumps(tool_call.arguments, indent=2)}")
             
             # Simulate tool execution (in real application, this would call actual tools)
             # Add API result with call_id (now required)
-            api_result_manager.add_api_result(
-                call_id=tool_call["call_id"],
-                result={"status": "success", "data": f"Simulated data for {tool_call['name']}"},
-                name=tool_call["name"]
+            result_manager.add_tool_result(
+                name=tool_call.name,
+                result={"status": "success", "data": f"Simulated data for {tool_call.name}"},
+                call_id=tool_call.call_id
             )
     
     # Print results
-    print("\nAPI Results:")
-    print(api_result_manager.get_api_results())
+    print("\nTool Results:")
+    print(result_manager.get_tool_results())
     
     # Example 2: Multiple function calls
     print("\nExample 2: Multiple function calls")
@@ -149,23 +149,23 @@ async def example_async_streaming() -> None:
             print(f"Content: {content}")
         
         # Handle tool calls
-        if tool_call:
+        if tool_call and isinstance(tool_call, ToolCall):
             print(f"\nTool Call:")
-            print(f"Instructions: {tool_call['instructions']}")
-            print(f"Call ID: {tool_call['call_id']}")
-            print(f"Name: {tool_call['name']}")
-            print(f"Arguments: {json.dumps(tool_call['arguments'], indent=2)}")
+            print(f"Instructions: {tool_call.instructions}")
+            print(f"Call ID: {tool_call.call_id}")
+            print(f"Name: {tool_call.name}")
+            print(f"Arguments: {json.dumps(tool_call.arguments, indent=2)}")
             
             # Simulate tool execution
-            api_result_manager.add_api_result(
-                call_id=tool_call["call_id"],
-                result={"status": "success", "data": f"Simulated data for {tool_call['name']}"},
-                name=tool_call["name"]
+            result_manager.add_tool_result(
+                name=tool_call.name,
+                result={"status": "success", "data": f"Simulated data for {tool_call.name}"},
+                call_id=tool_call.call_id
             )
     
     # Print final results
-    print("\nFinal API Results:")
-    print(api_result_manager.get_api_results())
+    print("\nFinal Tool Results:")
+    print(result_manager.get_tool_results())
 
 async def example_generate_prompt() -> None:
     """Example of generating prompt templates.

@@ -9,10 +9,10 @@ from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 import asyncio
 import os
-from mfcs.function_calling.function_prompt import FunctionPromptGenerator
 from openai import AsyncOpenAI
-from mfcs.function_calling.response_parser import ResponseParser
-from mfcs.function_calling.api_result_manager import ApiResultManager
+from mfcs.function_prompt import FunctionPromptGenerator
+from mfcs.response_parser import MemoryCall, ResponseParser, ToolCall
+from mfcs.result_manager import ResultManager
 
 
 # Load environment variables
@@ -76,7 +76,7 @@ async def run():
             
             # Initialize stream parser and result handler
             stream_parser = ResponseParser()
-            api_result_manager = ApiResultManager()
+            result_manager = ResultManager()
             
             print("\nStreaming Response:")
             print("-" * 30)
@@ -88,26 +88,48 @@ async def run():
                     print(f"Content: {content}")
                 
                 # Handle tool calls
-                if tool_call:
+                if tool_call and isinstance(tool_call, ToolCall):
                     print(f"\nTool Call:")
-                    print(f"Instructions: {tool_call['instructions']}")
-                    print(f"Call ID: {tool_call['call_id']}")
-                    print(f"Name: {tool_call['name']}")
-                    print(f"Arguments: {json.dumps(tool_call['arguments'], indent=2)}")
+                    print(f"Instructions: {tool_call.instructions}")
+                    print(f"Call ID: {tool_call.call_id}")
+                    print(f"Name: {tool_call.name}")
+                    print(f"Arguments: {json.dumps(tool_call.arguments, indent=2)}")
                     
                     # Execute the actual tool call
-                    result = await session.call_tool(tool_call['name'], arguments=tool_call['arguments'])
+                    result = await session.call_tool(tool_call.name, arguments=tool_call.arguments)
 
-                    # Add API result
-                    api_result_manager.add_api_result(
-                        call_id=tool_call["call_id"],
+                    # Add tool result
+                    result_manager.add_tool_result(
+                        call_id=tool_call.call_id,
                         result=result.content,
-                        name=tool_call["name"]
+                        name=tool_call.name
+                    )
+                
+                # Handle memory calls
+                if tool_call and isinstance(tool_call, MemoryCall):
+                    print(f"\nMemory Call:")
+                    print(f"Instructions: {tool_call.instructions}")
+                    print(f"Memory ID: {tool_call.memory_id}")
+                    print(f"Name: {tool_call.name}")
+                    print(f"Arguments: {json.dumps(tool_call.arguments, indent=2)}")
+
+                    # Execute the actual tool call
+                    result = await session.call_tool(tool_call.name, arguments=tool_call.arguments)
+
+                    # Add tool result
+                    result_manager.add_memory_result(
+                        memory_id=tool_call.memory_id,
+                        result=result.content,
+                        name=tool_call.name
                     )
             
             # Print results
-            print("\nAPI Results:")
-            print(api_result_manager.get_api_results())
+            print("\nTool Results:")
+            print(result_manager.get_tool_results())
+
+            # Print results
+            print("\nMemory Results:")
+            print(result_manager.get_memory_results())
 
 
 if __name__ == "__main__":
