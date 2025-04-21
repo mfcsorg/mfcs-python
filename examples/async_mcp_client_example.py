@@ -66,12 +66,13 @@ async def run():
             # Create chat completion request with streaming
             print("\nChat completion response (streaming):")
             stream = await client.chat.completions.create(
-                model="qwen-plus-latest",
+                model="deepseek-reasoner",
                 messages=[
                     {"role": "system", "content": function_prompt},
-                    {"role": "user", "content": "Please use the list_directory function to list all files in the examples directory. Make sure to call the list_directory function with the appropriate parameters."}
+                    {"role": "user", "content": "What is 1+1 equal to? Please use the list_directory function to list all files in the examples directory. Make sure to call the list_directory function with the appropriate parameters. Please explain in detail."}
                 ],
-                stream=True
+                stream=True,
+                stream_options={"include_usage": True}
             )
             
             # Initialize stream parser and result handler
@@ -82,46 +83,57 @@ async def run():
             print("-" * 30)
             
             # Process the stream in real-time
-            async for content, tool_call in stream_parser.parse_stream_output(stream):
+            async for content, call_info, reasoning_content, usage in stream_parser.parse_stream_output(stream):
+                # Print reasoning content if present
+                if reasoning_content:
+                    print(f"Reasoning: {reasoning_content}")
+                
                 # Print parsed content (without function calls)
                 if content:
                     print(f"Content: {content}")
                 
                 # Handle tool calls
-                if tool_call and isinstance(tool_call, ToolCall):
+                if call_info and isinstance(call_info, ToolCall):
                     print(f"\nTool Call:")
-                    print(f"Instructions: {tool_call.instructions}")
-                    print(f"Call ID: {tool_call.call_id}")
-                    print(f"Name: {tool_call.name}")
-                    print(f"Arguments: {json.dumps(tool_call.arguments, indent=2)}")
+                    print(f"Instructions: {call_info.instructions}")
+                    print(f"Call ID: {call_info.call_id}")
+                    print(f"Name: {call_info.name}")
+                    print(f"Arguments: {json.dumps(call_info.arguments, indent=2)}")
                     
                     # Execute the actual tool call
-                    result = await session.call_tool(tool_call.name, arguments=tool_call.arguments)
+                    result = await session.call_tool(call_info.name, arguments=call_info.arguments)
 
                     # Add tool result
                     result_manager.add_tool_result(
-                        call_id=tool_call.call_id,
+                        call_id=call_info.call_id,
                         result=result.content,
-                        name=tool_call.name
+                        name=call_info.name
                     )
                 
                 # Handle memory calls
-                if tool_call and isinstance(tool_call, MemoryCall):
+                if call_info and isinstance(call_info, MemoryCall):
                     print(f"\nMemory Call:")
-                    print(f"Instructions: {tool_call.instructions}")
-                    print(f"Memory ID: {tool_call.memory_id}")
-                    print(f"Name: {tool_call.name}")
-                    print(f"Arguments: {json.dumps(tool_call.arguments, indent=2)}")
+                    print(f"Instructions: {call_info.instructions}")
+                    print(f"Memory ID: {call_info.memory_id}")
+                    print(f"Name: {call_info.name}")
+                    print(f"Arguments: {json.dumps(call_info.arguments, indent=2)}")
 
                     # Execute the actual tool call
-                    result = await session.call_tool(tool_call.name, arguments=tool_call.arguments)
+                    result = await session.call_tool(call_info.name, arguments=call_info.arguments)
 
                     # Add tool result
                     result_manager.add_memory_result(
-                        memory_id=tool_call.memory_id,
+                        memory_id=call_info.memory_id,
                         result=result.content,
-                        name=tool_call.name
+                        name=call_info.name
                     )
+                
+                # Print usage statistics if available
+                if usage:
+                    print(f"\nUsage Statistics:")
+                    print(f"Prompt tokens: {usage.prompt_tokens}")
+                    print(f"Completion tokens: {usage.completion_tokens}")
+                    print(f"Total tokens: {usage.total_tokens}")
             
             # Print results
             print("\nTool Results:")

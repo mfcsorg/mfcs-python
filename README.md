@@ -11,10 +11,10 @@ A Python library for handling function calling in Large Language Models (LLMs).
 
 ## Features
 
-- Generate function calling prompt templates
+- Generate standardized function calling prompt templates
 - Parse function calls from LLM streaming output
 - Validate function schemas
-- Async streaming support
+- Async streaming support with real-time processing
 - Multiple function call handling
 - Memory prompt management
 - Result prompt management
@@ -41,7 +41,7 @@ OPENAI_API_BASE=your-api-base-url-here
 
 ## Example Installation
 
-To run the example code, you need to install additional dependencies. The examples are located in the `examples` directory, and each example has its specific dependency requirements:
+To run the example code, you need to install additional dependencies. The examples are located in the `examples` directory:
 
 ```bash
 cd examples
@@ -107,12 +107,12 @@ I need to check the weather.
 
 # Parse the function call
 parser = ResponseParser()
-content, tool_calls = parser.parse_output(output)
+content, tool_calls, memory_calls = parser.parse_output(output)
 print(f"Content: {content}")
 print(f"Function calls: {tool_calls}")
 ```
 
-### 3. Async Streaming Processing and Function Calling
+### 3. Async Streaming Processing
 
 ```python
 from mfcs.response_parser import ResponseParser
@@ -122,18 +122,37 @@ async def process_stream():
     parser = ResponseParser()
     result_manager = ResultManager()
     
-    async for chunk in stream:
-        content, tool_calls = parser.parse_stream_output(chunk)
+    async for content, call_info, reasoning_content, usage in parser.parse_stream_output(stream):
+        # Print reasoning content if present
+        if reasoning_content:
+            print(f"Reasoning: {reasoning_content}")
+            
+        # Print parsed content
         if content:
-            print(content, end="", flush=True)
-        if tool_calls:
-            for tool_call in tool_calls:
-                # Process function call and store results
-                result = await process_function_call(tool_call)
-                result_manager.add_result(tool_call['call_id'], tool_call['name'], result)
+            print(f"Content: {content}")
+            
+        # Handle tool calls
+        if call_info and isinstance(call_info, ToolCall):
+            print(f"\nTool Call:")
+            print(f"Instructions: {call_info.instructions}")
+            print(f"Call ID: {call_info.call_id}")
+            print(f"Name: {call_info.name}")
+            print(f"Arguments: {json.dumps(call_info.arguments, indent=2)}")
+            
+            # Simulate tool execution (in real application, this would call actual tools)
+            # Add API result with call_id (now required)
+            result_manager.add_tool_result(
+                name=call_info.name,
+                result={"status": "success", "data": f"Simulated data for {call_info.name}"},
+                call_id=call_info.call_id
+            )
+            
+        # Print usage statistics if available
+        if usage:
+            print(f"Usage: {usage}")
     
-    # Get all processing results
-    return result_manager.get_results()
+    print("\nTool Results:")
+    print(result_manager.get_tool_results())
 ```
 
 ### 4. Memory Prompt Management
@@ -167,15 +186,9 @@ memory_apis = [
 template = MemoryPromptGenerator.generate_memory_prompt(memory_apis)
 ```
 
-The memory prompt template includes:
-- Memory tool usage rules
-- Memory tool interface specifications
-- Memory usage restrictions
-- Memory application strategies
-
 ### 5. Result Management System
 
-The Result Management System provides a unified way to handle and format results from both tool calls and memory operations in LLM interactions. It ensures consistent result handling and proper cleanup.
+The Result Management System provides a unified way to handle and format results from both tool calls and memory operations.
 
 ```python
 from mfcs.result_manager import ResultManager
@@ -209,30 +222,11 @@ memory_results = result_manager.get_memory_results()
 # <memory_result>
 # {memory_id: memory_1, name: store_preference} {"status": "success"}
 # </memory_result>
-
-# Retrieve specific results by ID
-weather_result = result_manager.get_tool_result("weather_1")
-memory_result = result_manager.get_memory_result("memory_1")
 ```
-
-Key Features:
-- **Unified Management**: Handles both tool call results and memory operation results
-- **Structured Formatting**: Outputs results in a consistent XML-like format for LLM processing
-- **Automatic Cleanup**: Results are automatically cleared after retrieval to prevent memory leaks
-- **JSON Compatibility**: Supports JSON-serializable results with automatic string conversion
-- **ID-based Retrieval**: Allows fetching specific results using unique identifiers
-- **Type Safety**: Validates input parameters and handles various result types
-
-The system is designed to:
-1. Maintain a clean separation between tool calls and memory operations
-2. Ensure consistent result formatting for LLM consumption
-3. Prevent memory leaks through automatic cleanup
-4. Support both synchronous and asynchronous operations
-5. Handle various result types through automatic conversion
 
 ## Examples
 
-Check out the `examples` directory for more detailed examples:
+Check out the `examples` directory for detailed examples:
 
 - `function_calling_examples.py`: Basic function calling examples
   - Function prompt generation
@@ -240,9 +234,14 @@ Check out the `examples` directory for more detailed examples:
   - Result management
 
 - `async_function_calling_examples.py`: Async streaming examples
-  - Async streaming best practices
-  - Concurrent function call handling
-  - Async error handling and timeout control
+  - Real-time streaming processing
+  - Multiple function call handling
+  - Usage statistics tracking
+
+- `memory_function_examples.py`: Memory management examples
+  - Memory prompt generation
+  - Memory operation handling
+  - Memory result management
 
 - `mcp_client_example.py`: Model Control Protocol examples
   - MCP client implementation
@@ -268,22 +267,22 @@ Run the examples to see the library in action:
 
 ```bash
 # Run basic examples
-python function_calling_examples.py
+python examples/function_calling_examples.py
 
 # Run async examples
-python async_function_calling_examples.py
+python examples/async_function_calling_examples.py
 
 # Run MCP examples
-python mcp_client_example.py
+python examples/mcp_client_example.py
 
 # Run async MCP examples
-python async_mcp_client_example.py
+python examples/async_mcp_client_example.py
 
 # Run memory examples
-python memory_function_examples.py
+python examples/memory_function_examples.py
 
 # Run async memory examples
-python async_memory_function_examples.py
+python examples/async_memory_function_examples.py
 ```
 
 ## Notes

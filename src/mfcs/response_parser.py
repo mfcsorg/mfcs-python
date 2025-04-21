@@ -3,11 +3,18 @@
 import json
 import re
 import logging
-from typing import Dict, Any, List, Tuple, Optional, AsyncGenerator, Union, Match
+from typing import Dict, Any, List, Tuple, Optional, AsyncGenerator, Union
 from dataclasses import dataclass
 
-# 设置日志记录器
+# Set up logger
 logger = logging.getLogger(__name__)
+
+@dataclass
+class Usage:
+    """Usage statistics information."""
+    prompt_tokens: int
+    completion_tokens: int
+    total_tokens: int
 
 @dataclass
 class ToolCall:
@@ -34,7 +41,7 @@ class ResponseParser:
     and extract function calls and content.
     """
     
-    # 定义常用的正则表达式模式
+    # Define commonly used regex patterns
     INSTRUCTIONS_PATTERN = r"<instructions>(.*?)</instructions>"
     CALL_ID_PATTERN = r"<call_id>(.*?)</call_id>"
     MEMORY_ID_PATTERN = r"<memory_id>(.*?)</memory_id>"
@@ -129,31 +136,52 @@ class ResponseParser:
         
         return content, tool_calls, memory_calls
     
-    async def parse_stream_output(self, stream: AsyncGenerator[Any, None]) -> AsyncGenerator[Tuple[str, Optional[Union[ToolCall, MemoryCall]]], None]:
+    async def parse_stream_output(self, stream: AsyncGenerator[Any, None]) -> AsyncGenerator[Tuple[str, Optional[Union[ToolCall, MemoryCall]], Optional[str], Optional[Usage]], None]:
         """Process a stream of chat completion chunks.
         
         Args:
             stream: Async generator yielding chat completion chunks
             
         Returns:
-            Async generator yielding tuples of (content, call_info)
-            where call_info is either None, a ToolCall, or a MemoryCall
+            Async generator yielding tuples of (content, call_info, reasoning_content, usage)
+            where:
+            - content: The main content text
+            - call_info: Either None, a ToolCall, or a MemoryCall
+            - reasoning_content: The reasoning content if present, None otherwise
+            - usage: Usage statistics if present, None otherwise
         """
         buffer = ''
         tool_buffer = ''
         memory_buffer = ''
         is_collecting_tool = False
         is_collecting_memory = False
+        usage = None
         
         async for chunk in stream:
-            # Extract content from OpenAI ChatCompletionChunk
-            if hasattr(chunk, 'choices') and chunk.choices and chunk.choices[0].delta.content:
-                content = chunk.choices[0].delta.content
-            else:
-                content = ''
+            # Extract content and reasoning_content from OpenAI ChatCompletionChunk
+            content = ''
+            reasoning_content = ''
+            
+            if hasattr(chunk, 'choices') and chunk.choices:
+                if hasattr(chunk.choices[0].delta, 'content') and chunk.choices[0].delta.content:
+                    content = chunk.choices[0].delta.content
+                if hasattr(chunk.choices[0].delta, 'reasoning_content') and chunk.choices[0].delta.reasoning_content:
+                    reasoning_content = chunk.choices[0].delta.reasoning_content
+                    
+            # Extract usage if present
+            if hasattr(chunk, 'usage'):
+                usage = Usage(
+                    prompt_tokens=getattr(chunk.usage, 'prompt_tokens', 0),
+                    completion_tokens=getattr(chunk.usage, 'completion_tokens', 0),
+                    total_tokens=getattr(chunk.usage, 'total_tokens', 0)
+                )
                 
-            if not content:
+            if not content and not reasoning_content:
                 continue
+                
+            # First yield reasoning_content if present
+            if reasoning_content:
+                yield "", None, reasoning_content, None
                 
             # Add current content to appropriate buffer
             if is_collecting_tool:
@@ -174,7 +202,7 @@ class ResponseParser:
                     # Parse the tool call
                     tool_call = self._parse_xml_tool_call(tool_content)
                     if tool_call:
-                        yield "", tool_call
+                        yield "", tool_call, None, None
                     
                     # Reset tool collection state
                     is_collecting_tool = False
@@ -193,7 +221,7 @@ class ResponseParser:
                     # Parse the memory content
                     memory_call = self._parse_xml_memory(memory_content)
                     if memory_call:
-                        yield "", memory_call
+                        yield "", memory_call, None, None
                     
                     # Reset memory collection state
                     is_collecting_memory = False
@@ -209,7 +237,7 @@ class ResponseParser:
                     
                     # Output content before tool call
                     if parts[0].strip():
-                        yield parts[0].strip(), None
+                        yield parts[0].strip(), None, None, None
                     
                     # Start collecting tool call
                     is_collecting_tool = True
@@ -220,34 +248,29 @@ class ResponseParser:
                     
                     # Output content before memory
                     if parts[0].strip():
-                        yield parts[0].strip(), None
+                        yield parts[0].strip(), None, None, None
                     
                     # Start collecting memory
                     is_collecting_memory = True
                     memory_buffer = parts[1] if len(parts) > 1 else ''
                     buffer = ''
                 else:
-                    # Output complete sentences from buffer
-                    while True:
-                        # Find the last complete sentence
-                        last_sentence_end = max(
-                            buffer.rfind('。'),
-                            buffer.rfind('？'),
-                            buffer.rfind('！'),
-                            buffer.rfind('.'),
-                            buffer.rfind('?'),
-                            buffer.rfind('!')
-                        )
-                        
-                        if last_sentence_end > 0:
-                            # Output content up to last complete sentence
-                            content_to_output = buffer[:last_sentence_end + 1].strip()
-                            if content_to_output:
-                                yield content_to_output, None
-                            buffer = buffer[last_sentence_end + 1:]
-                        else:
-                            # No complete sentence found, keep remaining in buffer
-                            break
+                    # Optimization: Check if it contains the start of a special marker
+                    if '<' in buffer:
+                        # If it contains < symbol, it might be the start of a special marker, keep it in buffer
+                        continue
+                    # Otherwise output content immediately
+                    if buffer.strip():
+                        yield buffer.strip(), None, None, None
+                        buffer = ''
+        
+        # Yield any remaining content in buffer
+        if buffer.strip():
+            yield buffer.strip(), None, None, None
+            
+        # Yield usage information at the end if available
+        if usage:
+            yield "", None, None, usage
     
     def _parse_xml_tool_call(self, text: str) -> Optional[ToolCall]:
         """Parse an XML format tool call.

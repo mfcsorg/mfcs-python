@@ -78,7 +78,7 @@ def example_basic_function_calling():
     
     # Create chat completion request
     response = client.chat.completions.create(
-        model="qwen-plus-latest",
+        model="deepseek-reasoner",
         messages=[
             {
                 "role": "system",
@@ -97,6 +97,12 @@ def example_basic_function_calling():
     
     # Parse the response
     content, tool_calls, memory_calls = response_parser.parse_output(response.choices[0].message.content)
+
+    # Print reasoning content if present
+    if response.choices[0].message.reasoning_content:
+        print("\nReasoning:")
+        print("-" * 30)
+        print(response.choices[0].message.reasoning_content)
     
     # Print content (without function calls)
     if content:
@@ -138,13 +144,13 @@ def example_multiple_function_calls():
     
     # Create chat completion request
     response = client.chat.completions.create(
-        model="qwen-plus-latest",
+        model="deepseek-reasoner",
         messages=[
             {
                 "role": "system",
                 "content": f"You are a helpful assistant that can get weather information.\n{prompt_template}"
             },
-            {"role": "user", "content": "What's the weather in New York and Tokyo?"}
+            {"role": "user", "content": "What is 1+1 equal to? What's the weather like in Tokyo? Please explain in detail respectively."}
         ]
     )
     
@@ -155,6 +161,12 @@ def example_multiple_function_calls():
     # Parse the response
     content, tool_calls, memory_calls = response_parser.parse_output(response.choices[0].message.content)
     
+    # Print reasoning content if present
+    if response.choices[0].message.reasoning_content:
+        print("\nReasoning:")
+        print("-" * 30)
+        print(response.choices[0].message.reasoning_content)
+
     # Print content (without function calls)
     if content:
         print("\nContent:")

@@ -12,11 +12,13 @@ import asyncio
 from openai import AsyncOpenAI
 from dotenv import load_dotenv
 from mfcs.function_prompt import FunctionPromptGenerator
-from mfcs.response_parser import ResponseParser, ToolCall
+from mfcs.response_parser import ResponseParser, ToolCall, Usage
 from mfcs.result_manager import ResultManager
 
 # Load environment variables
 load_dotenv()
+
+print(os.getenv("OPENAI_API_BASE"))
 
 # Configure OpenAI
 client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"), base_url=os.getenv("OPENAI_API_BASE"))
@@ -78,7 +80,7 @@ async def example_async_streaming() -> None:
     
     # Create chat completion request with streaming
     stream = await client.chat.completions.create(
-        model="qwen-plus-latest",
+        model="deepseek-reasoner",
         messages=[
             {
                 "role": "system",
@@ -86,10 +88,11 @@ async def example_async_streaming() -> None:
             },
             {
                 "role": "user",
-                "content": "What's the weather like in Tokyo and find information about async programming"
+                "content": "What is 1+1 equal to? What's the weather like in Tokyo? Please explain in detail respectively."
             }
         ],
-        stream=True
+        stream=True,
+        stream_options={"include_usage": True}
     )
     
     # Initialize stream parser and result handler
@@ -100,26 +103,37 @@ async def example_async_streaming() -> None:
     print("-" * 30)
     
     # Process the stream in real-time
-    async for content, tool_call in stream_parser.parse_stream_output(stream):
+    async for content, call_info, reasoning_content, usage in stream_parser.parse_stream_output(stream):
+        # Print reasoning content if present
+        if reasoning_content:
+            print(f"Reasoning: {reasoning_content}")
+
         # Print parsed content (without function calls)
         if content:
-            print(f"Content: {content}", end="", flush=True)
+            print(f"Content: {content}")
         
         # Handle tool calls
-        if tool_call and isinstance(tool_call, ToolCall):
+        if call_info and isinstance(call_info, ToolCall):
             print(f"\nTool Call:")
-            print(f"Instructions: {tool_call.instructions}")
-            print(f"Call ID: {tool_call.call_id}")
-            print(f"Name: {tool_call.name}")
-            print(f"Arguments: {json.dumps(tool_call.arguments, indent=2)}")
+            print(f"Instructions: {call_info.instructions}")
+            print(f"Call ID: {call_info.call_id}")
+            print(f"Name: {call_info.name}")
+            print(f"Arguments: {json.dumps(call_info.arguments, indent=2)}")
             
             # Simulate tool execution (in real application, this would call actual tools)
             # Add API result with call_id (now required)
             result_manager.add_tool_result(
-                name=tool_call.name,
-                result={"status": "success", "data": f"Simulated data for {tool_call.name}"},
-                call_id=tool_call.call_id
+                name=call_info.name,
+                result={"status": "success", "data": f"Simulated data for {call_info.name}"},
+                call_id=call_info.call_id
             )
+            
+        # Print usage statistics if available
+        if usage:
+            print(f"\nUsage Statistics:")
+            print(f"Prompt tokens: {usage.prompt_tokens}")
+            print(f"Completion tokens: {usage.completion_tokens}")
+            print(f"Total tokens: {usage.total_tokens}")
     
     # Print results
     print("\nTool Results:")
@@ -137,31 +151,43 @@ async def example_async_streaming() -> None:
     
     # Create a new stream for the second example
     stream2 = await client.chat.completions.create(
-        model="qwen-plus-latest",
+        model="deepseek-reasoner",
         messages=messages,
-        stream=True
+        stream=True,
+        stream_options={"include_usage": True}
     )
     
     # Process the second stream
-    async for content, tool_call in stream_parser.parse_stream_output(stream2):
+    async for content, call_info, reasoning_content, usage in stream_parser.parse_stream_output(stream2):
+        # Print reasoning content if present
+        if reasoning_content:
+            print(f"Reasoning: {reasoning_content}")
+        
         # Print parsed content (without function calls)
         if content:
             print(f"Content: {content}")
         
         # Handle tool calls
-        if tool_call and isinstance(tool_call, ToolCall):
+        if call_info and isinstance(call_info, ToolCall):
             print(f"\nTool Call:")
-            print(f"Instructions: {tool_call.instructions}")
-            print(f"Call ID: {tool_call.call_id}")
-            print(f"Name: {tool_call.name}")
-            print(f"Arguments: {json.dumps(tool_call.arguments, indent=2)}")
+            print(f"Instructions: {call_info.instructions}")
+            print(f"Call ID: {call_info.call_id}")
+            print(f"Name: {call_info.name}")
+            print(f"Arguments: {json.dumps(call_info.arguments, indent=2)}")
             
             # Simulate tool execution
             result_manager.add_tool_result(
-                name=tool_call.name,
-                result={"status": "success", "data": f"Simulated data for {tool_call.name}"},
-                call_id=tool_call.call_id
+                name=call_info.name,
+                result={"status": "success", "data": f"Simulated data for {call_info.name}"},
+                call_id=call_info.call_id
             )
+            
+        # Print usage statistics if available
+        if usage:
+            print(f"\nUsage Statistics:")
+            print(f"Prompt tokens: {usage.prompt_tokens}")
+            print(f"Completion tokens: {usage.completion_tokens}")
+            print(f"Total tokens: {usage.total_tokens}")
     
     # Print final results
     print("\nFinal Tool Results:")

@@ -66,7 +66,7 @@ async def run():
             # Create chat completion request (non-streaming)
             print("\nSending chat completion request...")
             response = await client.chat.completions.create(
-                model="qwen-plus-latest",
+                model="deepseek-reasoner",
                 messages=[
                     {"role": "system", "content": function_prompt},
                     {"role": "user", "content": "Please use the list_directory function to list all files in the examples directory. Make sure to call the list_directory function with the appropriate parameters."}
@@ -85,12 +85,21 @@ async def run():
             
             # Parse the function calls using ResponseParser
             response_parser = ResponseParser()
-            parsed_content, tool_calls, memory_calls = response_parser.parse_output(content)
+            content, tool_calls, memory_calls = response_parser.parse_output(content)
+
+            # Print reasoning content if present
+            if response.choices[0].message.reasoning_content:
+                print("\nReasoning:")
+                print("-" * 30)
+                print(response.choices[0].message.reasoning_content)
             
-            print("\nParsed Content:")
-            print(parsed_content)
+            # Print content
+            if content:
+                print("\nContent:")
+                print("-" * 30)
+                print(content)
             
-            print("\nParsed Tool Calls:")
+            print("\nTool Calls:")
             if tool_calls:
                 for tool_call in tool_calls:
                     print(f"Function: {tool_call.name}")
@@ -110,7 +119,7 @@ async def run():
             print("\nTool Results:")
             print(result_manager.get_tool_results())
             
-            print("\nParsed Memory Calls:")
+            print("\nMemory Calls:")
             if memory_calls:
                 for memory_call in memory_calls:
                     print(f"Function: {memory_call.name}")

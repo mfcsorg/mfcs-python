@@ -68,7 +68,7 @@ def example_memory_function():
     
     # Create chat completion request with memory operations
     response = client.chat.completions.create(
-        model="qwen-plus-latest",
+        model="deepseek-reasoner",
         messages=[
             {
                 "role": "system",
@@ -88,6 +88,12 @@ def example_memory_function():
     # Parse the response
     content, tool_calls, memory_calls = response_parser.parse_output(response.choices[0].message.content)
     
+    # Print reasoning content if present
+    if response.choices[0].message.reasoning_content:
+        print("\nReasoning:")
+        print("-" * 30)
+        print(response.choices[0].message.reasoning_content)
+
     # Print content
     if content:
         print("\nContent:")

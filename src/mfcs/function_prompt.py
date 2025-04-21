@@ -16,7 +16,7 @@ class FunctionPromptGenerator:
 You can use tools to solve tasks. Follow these rules about tool calling:
 1. Always strictly follow the specified tool calling pattern and ensure all necessary parameters are provided.
 2. Conversations may reference tools that are no longer available. Never call tools that are not explicitly provided.
-3.**When talking to users, never mention tool names.** For example, instead of saying "I need to use the xxx tool to edit your file", say "I will edit your file".
+3.**When talking to users, never mention tool names.** For example, instead of saying "I need to use the edit_tool to edit your file", say "I will edit your file".
 4. Only call tools when necessary. If the user's task is general or you already know the answer, simply respond without calling tools.
 5. Before calling each tool, first explain to the user why you are calling it.
 6. After each tool use, always wait for the tool usage result before continuing. Do not assume tool usage success without explicit confirmation.
@@ -33,7 +33,7 @@ Parameters:
 - parameters: (required) A JSON object containing tool input parameters, following the tool's input pattern
 Example:
 <mfcs_tool>
-<instructions>xxx</instructions>
+<instructions>what to do</instructions>
 <call_id>call tool index</call_id>
 <name>tool name here</name>
 <parameters>

@@ -11,10 +11,10 @@
 
 ## 特性
 
-- 生成函数调用提示模板
+- 生成标准化的函数调用提示模板
 - 解析 LLM 流式输出中的函数调用
 - 验证函数模式
-- 支持异步流式处理
+- 支持实时处理的异步流式处理
 - 多函数调用处理
 - 记忆提示管理
 - 结果提示管理
@@ -41,7 +41,7 @@ OPENAI_API_BASE=your-api-base-url-here
 
 ## 示例安装
 
-要运行示例代码，需要安装额外的依赖。示例代码位于 `examples` 目录，每个示例都有其特定的依赖要求：
+要运行示例代码，需要安装额外的依赖。示例代码位于 `examples` 目录：
 
 ```bash
 cd examples
@@ -107,12 +107,12 @@ output = """
 
 # 解析函数调用
 parser = ResponseParser()
-content, tool_calls = parser.parse_output(output)
+content, tool_calls, memory_calls = parser.parse_output(output)
 print(f"内容: {content}")
 print(f"函数调用: {tool_calls}")
 ```
 
-### 3. 异步流式处理与函数调用
+### 3. 异步流式处理
 
 ```python
 from mfcs.response_parser import ResponseParser
@@ -122,18 +122,37 @@ async def process_stream():
     parser = ResponseParser()
     result_manager = ResultManager()
     
-    async for chunk in stream:
-        content, tool_calls = parser.parse_stream_output(chunk)
+    async for content, call_info, reasoning_content, usage in parser.parse_stream_output(stream):
+        # 打印推理内容（如果有）
+        if reasoning_content:
+            print(f"推理: {reasoning_content}")
+            
+        # 打印解析后的内容
         if content:
-            print(content, end="", flush=True)
-        if tool_calls:
-            for tool_call in tool_calls:
-                # 处理函数调用并存储结果
-                result = await process_function_call(tool_call)
-                result_manager.add_result(tool_call['call_id'], tool_call['name'], result)
+            print(f"内容: {content}")
+            
+        # 处理工具调用
+        if call_info and isinstance(call_info, ToolCall):
+            print(f"\nTool Call:")
+            print(f"Instructions: {call_info.instructions}")
+            print(f"Call ID: {call_info.call_id}")
+            print(f"Name: {call_info.name}")
+            print(f"Arguments: {json.dumps(call_info.arguments, indent=2)}")
+            
+            # Simulate tool execution (in real application, this would call actual tools)
+            # Add API result with call_id (now required)
+            result_manager.add_tool_result(
+                name=call_info.name,
+                result={"status": "success", "data": f"Simulated data for {call_info.name}"},
+                call_id=call_info.call_id
+            )
+            
+        # 打印使用统计（如果有）
+        if usage:
+            print(f"使用统计: {usage}")
     
-    # 获取所有处理结果
-    return result_manager.get_results()
+    print("\nTool Results:")
+    print(result_manager.get_tool_results())
 ```
 
 ### 4. 记忆提示管理
@@ -166,12 +185,6 @@ memory_apis = [
 # 生成记忆提示模板
 template = MemoryPromptGenerator.generate_memory_prompt(memory_apis)
 ```
-
-记忆提示模板包含：
-- 记忆工具使用规则
-- 记忆工具接口规范
-- 记忆使用限制
-- 记忆应用策略
 
 ### 5. 结果管理系统
 
@@ -209,30 +222,11 @@ memory_results = result_manager.get_memory_results()
 # <memory_result>
 # {memory_id: memory_1, name: store_preference} {"status": "success"}
 # </memory_result>
-
-# 通过 ID 获取特定结果
-weather_result = result_manager.get_tool_result("weather_1")
-memory_result = result_manager.get_memory_result("memory_1")
 ```
-
-主要特性：
-- **统一管理**：同时处理工具调用结果和记忆操作结果
-- **结构化格式化**：以一致的类 XML 格式输出结果，便于 LLM 处理
-- **自动清理**：获取结果后自动清除，防止内存泄漏
-- **JSON 兼容**：支持 JSON 可序列化结果，自动进行字符串转换
-- **基于 ID 的检索**：支持使用唯一标识符获取特定结果
-- **类型安全**：验证输入参数并处理各种结果类型
-
-系统设计目标：
-1. 保持工具调用和记忆操作的清晰分离
-2. 确保结果格式化的一致性，便于 LLM 使用
-3. 通过自动清理防止内存泄漏
-4. 支持同步和异步操作
-5. 通过自动转换处理各种结果类型
 
 ## 示例
 
-查看 `examples` 目录获取更详细的示例：
+查看 `examples` 目录获取详细示例：
 
 - `function_calling_examples.py`：基本函数调用示例
   - 函数提示生成
@@ -240,9 +234,14 @@ memory_result = result_manager.get_memory_result("memory_1")
   - 结果管理
 
 - `async_function_calling_examples.py`：异步流式处理示例
-  - 异步流式处理最佳实践
-  - 并发函数调用处理
-  - 异步错误处理和超时控制
+  - 实时流式处理
+  - 多函数调用处理
+  - 使用统计跟踪
+
+- `memory_function_examples.py`：记忆管理示例
+  - 记忆提示生成
+  - 记忆操作处理
+  - 记忆结果管理
 
 - `mcp_client_example.py`：模型控制协议示例
   - MCP 客户端实现
@@ -268,22 +267,22 @@ memory_result = result_manager.get_memory_result("memory_1")
 
 ```bash
 # 运行基本示例
-python function_calling_examples.py
+python examples/function_calling_examples.py
 
 # 运行异步示例
-python async_function_calling_examples.py
+python examples/async_function_calling_examples.py
 
 # 运行 MCP 示例
-python mcp_client_example.py
+python examples/mcp_client_example.py
 
 # 运行异步 MCP 示例
-python async_mcp_client_example.py
+python examples/async_mcp_client_example.py
 
 # 运行记忆示例
-python memory_function_examples.py
+python examples/memory_function_examples.py
 
 # 运行异步记忆示例
-python async_memory_function_examples.py
+python examples/async_memory_function_examples.py
 ```
 
 ## 注意事项
