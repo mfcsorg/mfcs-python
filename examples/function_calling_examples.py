@@ -22,7 +22,7 @@ load_dotenv()
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"), base_url=os.getenv("OPENAI_API_BASE"))
 
 # Define function schemas
-functions = [
+functions1 = [
     {
         "name": "search_database",
         "description": "Search the database for information",
@@ -64,6 +64,55 @@ functions = [
     }
 ]
 
+# Define function schemas
+functions2 = [
+    {
+        "type": "function",
+        "function": {
+            "name": "search_database",
+            "description": "Search the database for information",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "query": {
+                        "type": "string",
+                        "description": "The search query"
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Maximum number of results to return",
+                        "default": 10
+                    }
+                },
+                "required": ["query"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_weather",
+            "description": "Get the current weather for a location",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "location": {
+                        "type": "string",
+                        "description": "The city and state, e.g. San Francisco, CA"
+                    },
+                    "unit": {
+                        "type": "string",
+                        "enum": ["celsius", "fahrenheit"],
+                        "description": "The unit of temperature to use",
+                        "default": "celsius"
+                    }
+                },
+                "required": ["location"]
+            }
+        }
+    }
+]
+
 def example_basic_function_calling():
     """Example of basic function calling.
     
@@ -74,7 +123,7 @@ def example_basic_function_calling():
     print("=" * 50)
     
     # Generate prompt template
-    prompt_template = FunctionPromptGenerator.generate_function_prompt(functions)
+    prompt_template = FunctionPromptGenerator.generate_function_prompt(functions1)
     
     # Create chat completion request
     response = client.chat.completions.create(
@@ -122,9 +171,9 @@ def example_basic_function_calling():
             
             # Simulate tool execution (in real application, this would call actual tools)
             result_manager.add_tool_result(
-                call_id=tool_call.call_id,
+                name=tool_call.name,
                 result={"status": "success", "data": f"Simulated data for {tool_call.name}"},
-                name=tool_call.name
+                call_id=tool_call.call_id
             )
     
     # Print results
@@ -140,7 +189,7 @@ def example_multiple_function_calls():
     print("=" * 50)
     
     # Generate prompt template
-    prompt_template = FunctionPromptGenerator.generate_function_prompt(functions)
+    prompt_template = FunctionPromptGenerator.generate_function_prompt(functions2)
     
     # Create chat completion request
     response = client.chat.completions.create(
@@ -185,9 +234,9 @@ def example_multiple_function_calls():
             
             # Simulate tool execution
             result_manager.add_tool_result(
-                call_id=tool_call.call_id,
+                name=tool_call.name,
                 result={"status": "success", "data": f"Simulated data for {tool_call.name}"},
-                name=tool_call.name
+                call_id=tool_call.call_id
             )
     
     # Print final results
@@ -200,15 +249,23 @@ def example_generate_prompt():
     This example shows how to generate different types of prompt templates
     for function calling.
     """
-    print("\nExample: Generate Prompt Templates")
+    print("\nExample 1: Generate Prompt Templates")
     print("=" * 50)
     
     # Generate prompt template
-    prompt_template = FunctionPromptGenerator.generate_function_prompt(functions)
+    prompt_template1 = FunctionPromptGenerator.generate_function_prompt(functions1)
     
     print("\nGenerated Prompt Template:")
     print("-" * 50)
-    print(prompt_template)
+    print(prompt_template1)
+    print("-" * 50)
+
+    # Generate prompt template
+    prompt_template2 = FunctionPromptGenerator.generate_function_prompt(functions2)
+    
+    print("\nGenerated Prompt Template:")
+    print("-" * 50)
+    print(prompt_template2)
     print("-" * 50)
 
 def main():

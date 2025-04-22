@@ -64,7 +64,7 @@ update_common_rules()
 
 setup(
     name="mfcs",
-    version="0.1.3",
+    version="0.1.4",
     author="shideqin",
     author_email="shisdq@gmail.com",
     description="A Python library for handling function calling in Large Language Models (LLMs)",

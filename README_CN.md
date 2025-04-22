@@ -117,33 +117,34 @@ print(f"函数调用: {tool_calls}")
 ```python
 from mfcs.response_parser import ResponseParser
 from mfcs.result_manager import ResultManager
+import json
 
 async def process_stream():
     parser = ResponseParser()
     result_manager = ResultManager()
     
-    async for content, call_info, reasoning_content, usage in parser.parse_stream_output(stream):
+    async for delta, call_info, reasoning_content, usage in parser.parse_stream_output(stream):
         # 打印推理内容（如果有）
         if reasoning_content:
             print(f"推理: {reasoning_content}")
             
         # 打印解析后的内容
-        if content:
-            print(f"内容: {content}")
+        if delta:
+            print(f"内容: {delta.content} (完成原因: {delta.finish_reason})")
             
         # 处理工具调用
         if call_info and isinstance(call_info, ToolCall):
-            print(f"\nTool Call:")
-            print(f"Instructions: {call_info.instructions}")
-            print(f"Call ID: {call_info.call_id}")
-            print(f"Name: {call_info.name}")
-            print(f"Arguments: {json.dumps(call_info.arguments, indent=2)}")
+            print(f"\n工具调用:")
+            print(f"指令: {call_info.instructions}")
+            print(f"调用ID: {call_info.call_id}")
+            print(f"名称: {call_info.name}")
+            print(f"参数: {json.dumps(call_info.arguments, indent=2)}")
             
-            # Simulate tool execution (in real application, this would call actual tools)
-            # Add API result with call_id (now required)
+            # 模拟工具执行（在实际应用中，这里会调用真实的工具）
+            # 添加API结果，需要提供call_id
             result_manager.add_tool_result(
                 name=call_info.name,
-                result={"status": "success", "data": f"Simulated data for {call_info.name}"},
+                result={"status": "success", "data": f"模拟数据 for {call_info.name}"},
                 call_id=call_info.call_id
             )
             
@@ -151,7 +152,7 @@ async def process_stream():
         if usage:
             print(f"使用统计: {usage}")
     
-    print("\nTool Results:")
+    print("\n工具调用结果:")
     print(result_manager.get_tool_results())
 ```
 

@@ -13,7 +13,7 @@ import asyncio
 from openai import AsyncOpenAI
 from dotenv import load_dotenv
 from mfcs.memory_prompt import MemoryPromptGenerator
-from mfcs.response_parser import MemoryCall, ResponseParser, Usage
+from mfcs.response_parser import ResponseParser, MemoryCall
 from mfcs.result_manager import ResultManager
 
 # Load environment variables
@@ -93,14 +93,14 @@ async def example_async_memory_function():
     print("-" * 30)
     
     # Process streaming response using stream_parser
-    async for content, call_info, reasoning_content, usage in response_parser.parse_stream_output(stream):
+    async for delta, call_info, reasoning_content, usage in response_parser.parse_stream_output(stream):
         # Print reasoning content if present
         if reasoning_content:
             print(f"Reasoning: {reasoning_content}")
         
         # Print parsed content (without memory calls)
-        if content:
-            print(f"Content: {content}")
+        if delta:
+            print(f"Content: {delta.content} (finish reason: {delta.finish_reason})")
         
         # Handle memory calls
         if call_info and isinstance(call_info, MemoryCall):

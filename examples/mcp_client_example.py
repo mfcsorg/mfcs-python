@@ -110,9 +110,9 @@ async def run():
 
                 # Add tool result
                 result_manager.add_tool_result(
-                    call_id=tool_call.call_id,
+                    name=tool_call.name,
                     result=result.content,
-                    name=tool_call.name
+                    call_id=tool_call.call_id
                 )
             
             # Print results
@@ -130,9 +130,9 @@ async def run():
 
                 # Add memory result
                 result_manager.add_memory_result(
-                    memory_id=memory_call.memory_id,
+                    name=memory_call.name,
                     result=result.content,
-                    name=memory_call.name
+                    memory_id=memory_call.memory_id
                 )
             
             # Print results

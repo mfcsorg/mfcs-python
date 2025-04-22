@@ -94,15 +94,30 @@ Example:
         various LLMs that don't have native function calling support.
         
         Args:
-            functions: List of function schemas
+            functions: List of function schemas. Supports two formats:
+                1. Format with nested 'function' key:
+                   [{"type": "function", "function": {"name": "...", "description": "...", "parameters": {...}}}]
+                2. Format with flat structure:
+                   [{"type": "function", "name": "...", "description": "...", "parameters": {...}}]
             
         Returns:
             str: A prompt template for function calling
         """
+        # Normalize function schemas to a consistent format
+        normalized_functions = []
         for function in functions:
+            # Handle format with nested 'function' key
+            if "function" in function and isinstance(function["function"], dict):
+                normalized_functions.append(function["function"])
+            # Handle format with flat structure
+            else:
+                normalized_functions.append(function)
+        
+        # Validate each normalized function schema
+        for function in normalized_functions:
             cls.validate_function_schema(function)
         
-        functions_str = json.dumps(functions)
+        functions_str = json.dumps(normalized_functions)
 
         # format-specific instructions
         template = f'{cls._get_format_instructions()}\n'

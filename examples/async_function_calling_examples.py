@@ -12,7 +12,7 @@ import asyncio
 from openai import AsyncOpenAI
 from dotenv import load_dotenv
 from mfcs.function_prompt import FunctionPromptGenerator
-from mfcs.response_parser import ResponseParser, ToolCall, Usage
+from mfcs.response_parser import ResponseParser, ToolCall
 from mfcs.result_manager import ResultManager
 
 # Load environment variables
@@ -24,7 +24,7 @@ print(os.getenv("OPENAI_API_BASE"))
 client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"), base_url=os.getenv("OPENAI_API_BASE"))
 
 # Define function schemas
-functions = [
+functions1 = [
     {
         "name": "search_database",
         "description": "Search the database for information",
@@ -66,6 +66,55 @@ functions = [
     }
 ]
 
+# Define function schemas
+functions2 = [
+    {
+        "type": "function",
+        "function": {
+            "name": "search_database",
+            "description": "Search the database for information",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "query": {
+                        "type": "string",
+                        "description": "The search query"
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Maximum number of results to return",
+                        "default": 10
+                    }
+                },
+                "required": ["query"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_weather",
+            "description": "Get the current weather for a location",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "location": {
+                        "type": "string",
+                        "description": "The city and state, e.g. San Francisco, CA"
+                    },
+                    "unit": {
+                        "type": "string",
+                        "enum": ["celsius", "fahrenheit"],
+                        "description": "The unit of temperature to use",
+                        "default": "celsius"
+                    }
+                },
+                "required": ["location"]
+            }
+        }
+    }
+]
+
 async def example_async_streaming() -> None:
     """Example of async streaming with function calling.
     
@@ -76,7 +125,7 @@ async def example_async_streaming() -> None:
     print("=" * 50)
     
     # Generate prompt template
-    prompt_template = FunctionPromptGenerator.generate_function_prompt(functions)
+    prompt_template1 = FunctionPromptGenerator.generate_function_prompt(functions1)
     
     # Create chat completion request with streaming
     stream = await client.chat.completions.create(
@@ -84,7 +133,7 @@ async def example_async_streaming() -> None:
         messages=[
             {
                 "role": "system",
-                "content": f"You are a helpful assistant that can search the database and get weather information.\n{prompt_template}"
+                "content": f"You are a helpful assistant that can search the database and get weather information.\n{prompt_template1}"
             },
             {
                 "role": "user",
@@ -103,14 +152,14 @@ async def example_async_streaming() -> None:
     print("-" * 30)
     
     # Process the stream in real-time
-    async for content, call_info, reasoning_content, usage in stream_parser.parse_stream_output(stream):
+    async for delta, call_info, reasoning_content, usage in stream_parser.parse_stream_output(stream):
         # Print reasoning content if present
         if reasoning_content:
             print(f"Reasoning: {reasoning_content}")
 
         # Print parsed content (without function calls)
-        if content:
-            print(f"Content: {content}")
+        if delta:
+            print(f"Content: {delta.content} (finish reason: {delta.finish_reason})")
         
         # Handle tool calls
         if call_info and isinstance(call_info, ToolCall):
@@ -138,13 +187,16 @@ async def example_async_streaming() -> None:
     # Print results
     print("\nTool Results:")
     print(result_manager.get_tool_results())
+
+    # Generate prompt template
+    prompt_template2 = FunctionPromptGenerator.generate_function_prompt(functions2)
     
     # Example 2: Multiple function calls
     print("\nExample 2: Multiple function calls")
     messages = [
         {
             "role": "system",
-            "content": f"You are a helpful assistant that can get weather information.\n{prompt_template}"
+            "content": f"You are a helpful assistant that can get weather information.\n{prompt_template2}"
         },
         {"role": "user", "content": "What's the weather in New York and Tokyo?"}
     ]
@@ -158,14 +210,14 @@ async def example_async_streaming() -> None:
     )
     
     # Process the second stream
-    async for content, call_info, reasoning_content, usage in stream_parser.parse_stream_output(stream2):
+    async for delta, call_info, reasoning_content, usage in stream_parser.parse_stream_output(stream2):
         # Print reasoning content if present
         if reasoning_content:
             print(f"Reasoning: {reasoning_content}")
         
         # Print parsed content (without function calls)
-        if content:
-            print(f"Content: {content}")
+        if delta:
+            print(f"Content: {delta.content} (finish reason: {delta.finish_reason})")
         
         # Handle tool calls
         if call_info and isinstance(call_info, ToolCall):
@@ -203,11 +255,19 @@ async def example_generate_prompt() -> None:
     print("=" * 50)
     
     # Generate prompt template
-    prompt_template = FunctionPromptGenerator.generate_function_prompt(functions)
+    prompt_template1 = FunctionPromptGenerator.generate_function_prompt(functions1)
     
     print("\nGenerated Prompt Template:")
     print("-" * 50)
-    print(prompt_template)
+    print(prompt_template1)
+    print("-" * 50)
+
+    # Generate prompt template
+    prompt_template2 = FunctionPromptGenerator.generate_function_prompt(functions2)
+    
+    print("\nGenerated Prompt Template:")
+    print("-" * 50)
+    print(prompt_template2)
     print("-" * 50)
 
 async def main() -> None:

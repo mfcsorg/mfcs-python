@@ -117,19 +117,20 @@ print(f"Function calls: {tool_calls}")
 ```python
 from mfcs.response_parser import ResponseParser
 from mfcs.result_manager import ResultManager
+import json
 
 async def process_stream():
     parser = ResponseParser()
     result_manager = ResultManager()
     
-    async for content, call_info, reasoning_content, usage in parser.parse_stream_output(stream):
+    async for delta, call_info, reasoning_content, usage in parser.parse_stream_output(stream):
         # Print reasoning content if present
         if reasoning_content:
             print(f"Reasoning: {reasoning_content}")
             
         # Print parsed content
-        if content:
-            print(f"Content: {content}")
+        if delta:
+            print(f"Content: {delta.content} (finish reason: {delta.finish_reason})")
             
         # Handle tool calls
         if call_info and isinstance(call_info, ToolCall):

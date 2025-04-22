@@ -9,6 +9,13 @@ from dataclasses import dataclass
 # Set up logger
 logger = logging.getLogger(__name__)
 
+
+@dataclass
+class ChoiceDelta:
+    """Choice delta information."""
+    content: str
+    finish_reason: str
+
 @dataclass
 class Usage:
     """Usage statistics information."""
@@ -136,7 +143,7 @@ class ResponseParser:
         
         return content, tool_calls, memory_calls
     
-    async def parse_stream_output(self, stream: AsyncGenerator[Any, None]) -> AsyncGenerator[Tuple[str, Optional[Union[ToolCall, MemoryCall]], Optional[str], Optional[Usage]], None]:
+    async def parse_stream_output(self, stream: AsyncGenerator[Any, None]) -> AsyncGenerator[Tuple[Optional[ChoiceDelta], Optional[Union[ToolCall, MemoryCall]], Optional[str], Optional[Usage]], None]:
         """Process a stream of chat completion chunks.
         
         Args:
@@ -145,7 +152,7 @@ class ResponseParser:
         Returns:
             Async generator yielding tuples of (content, call_info, reasoning_content, usage)
             where:
-            - content: The main content text
+            - choice_delta: Either None, a ChoiceDelta
             - call_info: Either None, a ToolCall, or a MemoryCall
             - reasoning_content: The reasoning content if present, None otherwise
             - usage: Usage statistics if present, None otherwise
@@ -156,6 +163,7 @@ class ResponseParser:
         is_collecting_tool = False
         is_collecting_memory = False
         usage = None
+        finish_reason = None
         
         async for chunk in stream:
             # Extract content and reasoning_content from OpenAI ChatCompletionChunk
@@ -167,6 +175,10 @@ class ResponseParser:
                     content = chunk.choices[0].delta.content
                 if hasattr(chunk.choices[0].delta, 'reasoning_content') and chunk.choices[0].delta.reasoning_content:
                     reasoning_content = chunk.choices[0].delta.reasoning_content
+                    
+                # Capture finish_reason if present
+                if hasattr(chunk.choices[0], 'finish_reason') and chunk.choices[0].finish_reason:
+                    finish_reason = chunk.choices[0].finish_reason
                     
             # Extract usage if present
             if hasattr(chunk, 'usage'):
@@ -181,7 +193,7 @@ class ResponseParser:
                 
             # First yield reasoning_content if present
             if reasoning_content:
-                yield "", None, reasoning_content, None
+                yield None, None, reasoning_content, None
                 
             # Add current content to appropriate buffer
             if is_collecting_tool:
@@ -202,7 +214,7 @@ class ResponseParser:
                     # Parse the tool call
                     tool_call = self._parse_xml_tool_call(tool_content)
                     if tool_call:
-                        yield "", tool_call, None, None
+                        yield None, tool_call, None, None
                     
                     # Reset tool collection state
                     is_collecting_tool = False
@@ -221,7 +233,7 @@ class ResponseParser:
                     # Parse the memory content
                     memory_call = self._parse_xml_memory(memory_content)
                     if memory_call:
-                        yield "", memory_call, None, None
+                        yield None, memory_call, None, None
                     
                     # Reset memory collection state
                     is_collecting_memory = False
@@ -237,7 +249,7 @@ class ResponseParser:
                     
                     # Output content before tool call
                     if parts[0].strip():
-                        yield parts[0].strip(), None, None, None
+                        yield ChoiceDelta(content=parts[0].strip(), finish_reason=None), None, None, None
                     
                     # Start collecting tool call
                     is_collecting_tool = True
@@ -248,7 +260,7 @@ class ResponseParser:
                     
                     # Output content before memory
                     if parts[0].strip():
-                        yield parts[0].strip(), None, None, None
+                        yield ChoiceDelta(content=parts[0].strip(), finish_reason=None), None, None, None
                     
                     # Start collecting memory
                     is_collecting_memory = True
@@ -261,16 +273,20 @@ class ResponseParser:
                         continue
                     # Otherwise output content immediately
                     if buffer.strip():
-                        yield buffer.strip(), None, None, None
+                        yield ChoiceDelta(content=buffer.strip(), finish_reason=None), None, None, None
                         buffer = ''
-        
+
         # Yield any remaining content in buffer
         if buffer.strip():
-            yield buffer.strip(), None, None, None
+            yield ChoiceDelta(content=buffer.strip(), finish_reason=None), None, None, None
+            
+        # Yield finish reason at the end if available
+        if finish_reason:
+            yield ChoiceDelta(content=None, finish_reason=finish_reason), None, None, None
             
         # Yield usage information at the end if available
         if usage:
-            yield "", None, None, usage
+            yield None, None, None, usage
     
     def _parse_xml_tool_call(self, text: str) -> Optional[ToolCall]:
         """Parse an XML format tool call.

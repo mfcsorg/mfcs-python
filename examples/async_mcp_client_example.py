@@ -27,7 +27,7 @@ server_params = StdioServerParameters(
     # Server execution command, here it's npx
     command="npx",
     # Additional parameters for the startup command, here running server-filesystem
-    args=["@modelcontextprotocol/server-filesystem", os.path.dirname(__file__)],
+    args=["@modelcontextprotocol/server-filesystem", "./"],
     # Environment variables, default is None, meaning use current environment variables
     env=None
 )
@@ -83,14 +83,14 @@ async def run():
             print("-" * 30)
             
             # Process the stream in real-time
-            async for content, call_info, reasoning_content, usage in stream_parser.parse_stream_output(stream):
+            async for delta, call_info, reasoning_content, usage in stream_parser.parse_stream_output(stream):
                 # Print reasoning content if present
                 if reasoning_content:
                     print(f"Reasoning: {reasoning_content}")
                 
                 # Print parsed content (without function calls)
-                if content:
-                    print(f"Content: {content}")
+                if delta:
+                    print(f"Content: {delta.content} (finish reason: {delta.finish_reason})")
                 
                 # Handle tool calls
                 if call_info and isinstance(call_info, ToolCall):
@@ -105,9 +105,9 @@ async def run():
 
                     # Add tool result
                     result_manager.add_tool_result(
-                        call_id=call_info.call_id,
+                        name=call_info.name,
                         result=result.content,
-                        name=call_info.name
+                        call_id=call_info.call_id
                     )
                 
                 # Handle memory calls
@@ -123,9 +123,9 @@ async def run():
 
                     # Add tool result
                     result_manager.add_memory_result(
-                        memory_id=call_info.memory_id,
+                        name=call_info.name,
                         result=result.content,
-                        name=call_info.name
+                        memory_id=call_info.memory_id
                     )
                 
                 # Print usage statistics if available
