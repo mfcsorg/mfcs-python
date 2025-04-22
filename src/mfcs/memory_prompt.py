@@ -116,7 +116,7 @@ Example:
         for memory_api in memory_apis:
             cls.validate_memory_schema(memory_api)
         
-        memory_apis_str = json.dumps(memory_apis)
+        memory_apis_str = json.dumps(memory_apis, ensure_ascii=False)
 
         # format-specific instructions
         template = f'{cls._get_format_instructions()}\n'

@@ -117,7 +117,7 @@ Example:
         for function in normalized_functions:
             cls.validate_function_schema(function)
         
-        functions_str = json.dumps(normalized_functions)
+        functions_str = json.dumps(normalized_functions, ensure_ascii=False)
 
         # format-specific instructions
         template = f'{cls._get_format_instructions()}\n'
