@@ -258,9 +258,13 @@ async def process_stream():
             print(f"Instructions: {agent_info.instructions}")
             print(f"Agent ID: {agent_info.agent_id}")
             print(f"Name: {agent_info.name}")
-            print(f"Content: {agent_info.arguments.get('content')}")
-            # Simulate agent operation (customize as needed)
-            # You may want to collect agent results or trigger agent actions here
+            print(f"Arguments: {json.dumps(agent_info.arguments, indent=2)}")
+            # Simulate Agent operation
+            result_manager.add_agent_result(
+                name=agent_info.name,
+                result={"status": "success"},
+                memory_id=agent_info.agent_id
+            )
 
         # Print usage statistics if available
         if usage:

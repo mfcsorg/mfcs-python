@@ -281,8 +281,13 @@ async def process_stream():
             print(f"指令: {agent_info.instructions}")
             print(f"Agent ID: {agent_info.agent_id}")
             print(f"名称: {agent_info.name}")
-            print(f"内容: {agent_info.arguments.get('content')}")
-            # 可在此模拟 agent 操作或收集 agent 结果
+            print(f"参数: {json.dumps(agent_info.arguments, indent=2)}")
+            # 模拟 Agent 操作
+            result_manager.add_agent_result(
+                name=agent_info.name,
+                result={"status": "success"},
+                memory_id=agent_info.agent_id
+            )
         
         # 打印使用统计（如果有）
         if usage:
