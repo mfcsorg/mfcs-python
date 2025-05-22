@@ -440,7 +440,10 @@ python examples/async_mcp_client_example.py
 
 ## 系统要求
 
-- Python 3.8 或更高版本
+- Python 3.8 及以上版本
+- 推荐使用最新版 pip 进行依赖安装
+- 支持主流操作系统（Windows、Linux、macOS）
+- 依赖库详见 requirements.txt
 
 ## 许可证
 

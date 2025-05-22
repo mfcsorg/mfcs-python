@@ -414,6 +414,9 @@ python examples/async_mcp_client_example.py
 ## System Requirements
 
 - Python 3.8 or higher
+- Latest pip recommended for dependency installation
+- Compatible with major operating systems (Windows, Linux, macOS)
+- See requirements.txt for dependencies
 
 ## License
 
