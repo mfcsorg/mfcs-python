@@ -376,16 +376,38 @@ python examples/async_mcp_client_example.py
 
 ## Notes
 
-- Async features require Python 3.8+
-- Make sure to handle API keys and sensitive information securely
-- Replace simulated API calls with actual implementations in production
-- Follow the tool call rules in the prompt templates
-- Use a unique `call_id` for each function call
-- Provide clear instructions for each function call
-- Pay attention to error handling and resource cleanup in async streaming
-- Use `ResultManager` to manage results from multiple function calls
-- Handle exceptions and timeouts properly in async contexts
-- Use `MemoryPromptManager` to manage conversation context
+- **Python Version Requirement**  
+  Async features require Python 3.8 or higher.
+
+- **Security**  
+  Make sure to handle API keys and sensitive information securely to avoid leaks.
+
+- **API Call Implementation**  
+  The API calls in the example code are simulated. Replace them with your actual business logic in production.
+
+- **Unique Identifiers**  
+  - Use a unique `call_id` for each function call.
+  - Use a unique `memory_id` for each memory operation.
+  - Use a unique `agent_id` for each agent operation.
+
+- **Call Format Specification**  
+  - The `<mfcs_call>`, `<mfcs_memory>`, and `<mfcs_agent>` blocks' `<parameters>` fields should be standard JSON.
+  - The `<mfcs_agent>` block's `<parameters>` should only contain a `content` field for consistency.
+
+- **Prompt Template and Call Rules**  
+  - Always generate prompt templates using the appropriate prompt generator.
+  - Follow the call rules in the prompt templates to ensure the LLM can parse and invoke correctly.
+
+- **Result Management**  
+  - Use `ResultManager` to manage results from function, memory, and agent calls for unified LLM consumption and post-processing.
+  - Use `get_tool_results()`, `get_memory_results()`, and `get_agent_results()` to retrieve results.
+
+- **Error and Resource Management**  
+  - Pay attention to exception handling and resource cleanup in async streaming to prevent memory leaks or deadlocks.
+  - Keep error handling and resource cleanup consistent across agent, function, and memory calls.
+
+- **Extensibility**  
+  If you need to support more types of calls or result management, you can extend the current structure as a reference.
 
 ## System Requirements
 
