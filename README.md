@@ -11,13 +11,15 @@ A Python library for handling function calling in Large Language Models (LLMs).
 
 ## Features
 
-- Generate standardized function calling prompt templates
-- Parse function calls from LLM streaming output
-- Validate function schemas
-- Async streaming support with real-time processing
-- Multiple function call handling
-- Memory prompt management
-- Result prompt management
+- Standardized management for function, memory, and agent calls
+- Generate standardized prompt templates for function, memory, and agent calls
+- Parse function, memory, and agent calls from LLM output (supports both sync and async streaming)
+- Validate parameters and schemas for function, memory, and agent calls
+- Unified result management and formatted output for multiple call types
+- Async streaming support with real-time multi-type call processing
+- Easy unique identifier assignment and call tracking
+- Suitable for multi-agent collaboration, tool invocation, memory management, and more
+- Highly extensible and integrable for various LLM application scenarios
 
 ## Installation
 
