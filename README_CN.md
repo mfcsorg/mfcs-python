@@ -72,7 +72,9 @@ pip install -r requirements.txt
 
 ## 使用方法
 
-### 1. 生成函数调用提示模板
+## 1. 生成提示模板
+
+### 1.1 生成函数调用提示模板
 
 ```python
 from mfcs.function_prompt import FunctionPromptGenerator
@@ -105,80 +107,7 @@ functions = [
 template = FunctionPromptGenerator.generate_function_prompt(functions)
 ```
 
-### 2. 解析输出中的函数调用
-
-```python
-from mfcs.response_parser import ResponseParser
-
-# 函数调用示例
-output = """
-我需要查询天气信息。
-
-<mfcs_call>
-<instructions>获取纽约的天气信息</instructions>
-<call_id>weather_1</call_id>
-<name>get_weather</name>
-<parameters>
-{
-  "location": "New York, NY",
-  "unit": "fahrenheit"
-}
-</parameters>
-</mfcs_call>
-"""
-
-# 解析函数调用
-parser = ResponseParser()
-content, tool_calls, memory_calls = parser.parse_output(output)
-print(f"内容: {content}")
-print(f"函数调用: {tool_calls}")
-```
-
-### 3. 异步流式处理
-
-```python
-from mfcs.response_parser import ResponseParser
-from mfcs.result_manager import ResultManager
-import json
-
-async def process_stream():
-    parser = ResponseParser()
-    result_manager = ResultManager()
-    
-    async for delta, call_info, reasoning_content, usage in parser.parse_stream_output(stream):
-        # 打印推理内容（如果有）
-        if reasoning_content:
-            print(f"推理: {reasoning_content}")
-            
-        # 打印解析后的内容
-        if delta:
-            print(f"内容: {delta.content} (完成原因: {delta.finish_reason})")
-            
-        # 处理工具调用
-        if call_info and isinstance(call_info, ToolCall):
-            print(f"\n工具调用:")
-            print(f"指令: {call_info.instructions}")
-            print(f"调用ID: {call_info.call_id}")
-            print(f"名称: {call_info.name}")
-            print(f"参数: {json.dumps(call_info.arguments, indent=2)}")
-            
-            # 模拟工具执行（在实际应用中，这里会调用真实的工具）
-            # 添加API结果，需要提供call_id
-            result_manager.add_tool_result(
-                name=call_info.name,
-                result={"status": "success", "data": f"模拟数据 for {call_info.name}"},
-                call_id=call_info.call_id
-            )
-            
-        # 打印使用统计（如果有）
-        if usage:
-            print(f"使用统计: {usage}")
-    
-    print("\n工具调用结果:")
-    print(result_manager.get_tool_results())
-```
-
-### 4. 记忆提示管理
+### 1.2 生成记忆提示模板
 
 ```python
 from mfcs.memory_prompt import MemoryPromptGenerator
@@ -209,9 +138,167 @@ memory_apis = [
 template = MemoryPromptGenerator.generate_memory_prompt(memory_apis)
 ```
 
-### 5. 结果管理
+### 1.3 生成 Agent 提示模板
 
-结果管理提供了一种统一的方式来处理和格式化 LLM 交互中的工具调用和记忆操作结果。它确保结果处理的一致性和适当的清理机制。
+```python
+from mfcs.agent_prompt import AgentPromptGenerator
+
+# 定义 agent API
+agent_apis = [
+    {
+        "name": "send_result",
+        "description": "将结果发送给指定的 agent",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "content": {
+                    "type": "string",
+                    "description": "需要发送的内容"
+                }
+            },
+            "required": ["content"]
+        }
+    }
+]
+
+# 生成 agent 提示模板
+template = AgentPromptGenerator.generate_agent_prompt(agent_apis)
+```
+
+## 2. 解析与调用
+
+### 2.1 解析输出中的函数、记忆、Agent 调用
+
+```python
+from mfcs.response_parser import ResponseParser
+
+# 函数调用示例
+output = """
+我需要查询天气信息，并保存我的偏好，同时让 agent_A 处理结果。
+
+<mfcs_call>
+<instructions>获取纽约的天气信息</instructions>
+<call_id>weather_1</call_id>
+<name>get_weather</name>
+<parameters>
+{
+  "location": "New York, NY",
+  "unit": "fahrenheit"
+}
+</parameters>
+</mfcs_call>
+
+<mfcs_memory>
+<instructions>保存用户偏好</instructions>
+<memory_id>memory_1</memory_id>
+<name>store_preference</name>
+<parameters>
+{
+  "preference_type": "weather_unit",
+  "value": "fahrenheit"
+}
+</parameters>
+</mfcs_memory>
+
+<mfcs_agent>
+<instructions>将天气结果发送给 agent_B</instructions>
+<agent_id>agent_1</agent_id>
+<name>send_result</name>
+<parameters>
+{
+  "content": "纽约天气为 25°F，已发送给 agent_B"
+}
+</parameters>
+</mfcs_agent>
+"""
+
+parser = ResponseParser()
+content, tool_calls, memory_calls, agent_calls = parser.parse_output(output)
+print(f"内容: {content}")
+print(f"函数调用: {tool_calls}")
+print(f"记忆调用: {memory_calls}")
+print(f"Agent 调用: {agent_calls}")
+
+# 说明：
+# output 现在包含 <mfcs_call>、<mfcs_memory> 和 <mfcs_agent> 三种标签。
+# <mfcs_agent> 的 <parameters> 只包含 content 字段。
+# parse_output 返回 agent_calls，便于后续处理 agent 相关逻辑。
+```
+
+### 2.2 异步流式处理函数、记忆、Agent 调用
+
+```python
+from mfcs.response_parser import ResponseParser
+from mfcs.result_manager import ResultManager
+import json
+
+async def process_stream():
+    parser = ResponseParser()
+    result_manager = ResultManager()
+    
+    async for delta, call_info, reasoning_content, usage, memory_info, agent_info in parser.parse_stream_output(stream):
+        # 打印推理内容（如果有）
+        if reasoning_content:
+            print(f"推理: {reasoning_content}")
+        
+        # 打印解析后的内容
+        if delta:
+            print(f"内容: {delta.content} (完成原因: {delta.finish_reason})")
+        
+        # 处理工具调用
+        if call_info and isinstance(call_info, ToolCall):
+            print(f"\n工具调用:")
+            print(f"指令: {call_info.instructions}")
+            print(f"调用ID: {call_info.call_id}")
+            print(f"名称: {call_info.name}")
+            print(f"参数: {json.dumps(call_info.arguments, indent=2)}")
+            # 模拟工具执行
+            result_manager.add_tool_result(
+                name=call_info.name,
+                result={"status": "success", "data": f"模拟数据 for {call_info.name}"},
+                call_id=call_info.call_id
+            )
+        
+        # 处理记忆调用
+        if memory_info and isinstance(memory_info, MemoryCall):
+            print(f"\n记忆调用:")
+            print(f"指令: {memory_info.instructions}")
+            print(f"记忆ID: {memory_info.memory_id}")
+            print(f"名称: {memory_info.name}")
+            print(f"参数: {json.dumps(memory_info.arguments, indent=2)}")
+            # 模拟记忆操作
+            result_manager.add_memory_result(
+                name=memory_info.name,
+                result={"status": "success"},
+                memory_id=memory_info.memory_id
+            )
+        
+        # 处理 agent 调用
+        if agent_info and isinstance(agent_info, AgentCall):
+            print(f"\nAgent 调用:")
+            print(f"指令: {agent_info.instructions}")
+            print(f"Agent ID: {agent_info.agent_id}")
+            print(f"名称: {agent_info.name}")
+            print(f"内容: {agent_info.arguments.get('content')}")
+            # 可在此模拟 agent 操作或收集 agent 结果
+        
+        # 打印使用统计（如果有）
+        if usage:
+            print(f"使用统计: {usage}")
+    
+    print("\n工具调用结果:")
+    print(result_manager.get_tool_results())
+    print("记忆调用结果:")
+    print(result_manager.get_memory_results())
+    print("Agent 调用结果:")
+    print(result_manager.get_agent_results())
+```
+
+## 3. 结果管理
+
+### 3.1 函数、记忆、Agent 执行结果管理
+
+结果管理提供了一种统一的方式来处理和格式化 LLM 交互中的工具调用、记忆操作和 Agent 操作结果。它确保结果处理的一致性和适当的清理机制。
 
 ```python
 from mfcs.result_manager import ResultManager
@@ -233,6 +320,13 @@ result_manager.add_memory_result(
     memory_id="memory_1"         # 操作的唯一标识符
 )
 
+# 存储 agent 操作结果
+result_manager.add_agent_result(
+    name="send_result",                # Agent 操作名称
+    result={"status": "success"},      # 操作结果
+    agent_id="agent_1"                 # 操作的唯一标识符
+)
+
 # 获取格式化结果供 LLM 使用
 tool_results = result_manager.get_tool_results()
 # 输出格式：
@@ -245,6 +339,12 @@ memory_results = result_manager.get_memory_results()
 # <memory_result>
 # {memory_id: memory_1, name: store_preference} {"status": "success"}
 # </memory_result>
+
+agent_results = result_manager.get_agent_results()
+# 输出格式：
+# <agent_result>
+# {agent_id: agent_1, name: send_result} {"status": "success"}
+# </agent_result>
 ```
 
 ## 示例
