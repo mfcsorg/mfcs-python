@@ -11,8 +11,9 @@ import json
 import asyncio
 from openai import AsyncOpenAI
 from dotenv import load_dotenv
-from mfcs.function_prompt import FunctionPromptGenerator
-from mfcs.response_parser import ResponseParser, ToolCall
+from python_a2a import A2AClient, Message, TextContent, MessageRole
+from mfcs.agent_prompt import AgentPromptGenerator
+from mfcs.response_parser import ResponseParser, AgentCall
 from mfcs.result_manager import ResultManager
 
 # Load environment variables
@@ -20,6 +21,9 @@ load_dotenv()
 
 # Configure OpenAI
 client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"), base_url=os.getenv("OPENAI_API_BASE"))
+
+# A2A client
+a2a_client = A2AClient("http://localhost:8000/a2a")
 
 # Define function schemas
 functions1 = [
@@ -113,17 +117,18 @@ functions2 = [
     }
 ]
 
+
 async def example_async_streaming() -> None:
-    """Example of async streaming with function calling.
+    """Example of async streaming with A2A.
     
-    This example shows how to use async streaming with function calling
+    This example shows how to use async streaming with A2A
     to process responses in real-time.
     """
-    print("\nExample: Async Streaming")
+    print("\nExample: A2A Async Streaming")
     print("=" * 50)
     
     # Generate prompt template
-    prompt_template1 = FunctionPromptGenerator.generate_function_prompt(functions1)
+    prompt_template1 = AgentPromptGenerator.generate_agent_prompt(functions1)
     
     # Create chat completion request with streaming
     stream = await client.chat.completions.create(
@@ -160,19 +165,25 @@ async def example_async_streaming() -> None:
             print(f"Content: {delta.content} (finish reason: {delta.finish_reason})")
         
         # Handle tool calls
-        if call_info and isinstance(call_info, ToolCall):
+        if call_info and isinstance(call_info, AgentCall):
             print(f"\nTool Call:")
             print(f"Instructions: {call_info.instructions}")
-            print(f"Call ID: {call_info.call_id}")
+            print(f"Agent ID: {call_info.agent_id}")
             print(f"Name: {call_info.name}")
             print(f"Arguments: {json.dumps(call_info.arguments, indent=2)}")
             
-            # Simulate tool execution (in real application, this would call actual tools)
+            # A2A tool execution
+            messages = Message(
+                role=MessageRole.USER,
+                content=TextContent(text=json.dumps(call_info.arguments))
+            )
+            response = a2a_client.send_message(messages)
+
             # Add API result with call_id (now required)
-            result_manager.add_tool_result(
+            result_manager.add_agent_result(
                 name=call_info.name,
-                result={"status": "success", "data": f"Simulated data for {call_info.name}"},
-                call_id=call_info.call_id
+                result=json.loads(response.content.text),
+                agent_id=call_info.agent_id
             )
             
         # Print usage statistics if available
@@ -184,10 +195,10 @@ async def example_async_streaming() -> None:
     
     # Print results
     print("\nTool Results:")
-    print(result_manager.get_tool_results())
+    print(result_manager.get_agent_results())
 
     # Generate prompt template
-    prompt_template2 = FunctionPromptGenerator.generate_function_prompt(functions2)
+    prompt_template2 = AgentPromptGenerator.generate_agent_prompt(functions2)
     
     # Example 2: Multiple function calls
     print("\nExample 2: Multiple function calls")
@@ -218,18 +229,25 @@ async def example_async_streaming() -> None:
             print(f"Content: {delta.content} (finish reason: {delta.finish_reason})")
         
         # Handle tool calls
-        if call_info and isinstance(call_info, ToolCall):
+        if call_info and isinstance(call_info, AgentCall):
             print(f"\nTool Call:")
             print(f"Instructions: {call_info.instructions}")
-            print(f"Call ID: {call_info.call_id}")
+            print(f"Agent ID: {call_info.agent_id}")
             print(f"Name: {call_info.name}")
             print(f"Arguments: {json.dumps(call_info.arguments, indent=2)}")
-            
+
+            # A2A tool execution
+            messages = Message(
+                role=MessageRole.USER,
+                content=TextContent(text=json.dumps(call_info.arguments))
+            )
+            response = a2a_client.send_message(messages)
+
             # Simulate tool execution
-            result_manager.add_tool_result(
+            result_manager.add_agent_result(
                 name=call_info.name,
-                result={"status": "success", "data": f"Simulated data for {call_info.name}"},
-                call_id=call_info.call_id
+                result=json.loads(response.content.text),
+                agent_id=call_info.agent_id
             )
             
         # Print usage statistics if available
@@ -241,7 +259,7 @@ async def example_async_streaming() -> None:
     
     # Print final results
     print("\nFinal Tool Results:")
-    print(result_manager.get_tool_results())
+    print(result_manager.get_agent_results())
 
 async def example_generate_prompt() -> None:
     """Example of generating prompt templates.
@@ -253,7 +271,7 @@ async def example_generate_prompt() -> None:
     print("=" * 50)
     
     # Generate prompt template
-    prompt_template1 = FunctionPromptGenerator.generate_function_prompt(functions1)
+    prompt_template1 = AgentPromptGenerator.generate_agent_prompt(functions1)
     
     print("\nGenerated Prompt Template:")
     print("-" * 50)
@@ -261,7 +279,7 @@ async def example_generate_prompt() -> None:
     print("-" * 50)
 
     # Generate prompt template
-    prompt_template2 = FunctionPromptGenerator.generate_function_prompt(functions2)
+    prompt_template2 = AgentPromptGenerator.generate_agent_prompt(functions2)
     
     print("\nGenerated Prompt Template:")
     print("-" * 50)

@@ -1,4 +1,6 @@
 # Core dependencies
-openai>=1.0.0
+openai==1.77.0
 python-dotenv>=0.19.0
 mcp>=1.6.0
+python-a2a
+mfcs

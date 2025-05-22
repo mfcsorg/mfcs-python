@@ -56,6 +56,32 @@ def update_common_rules():
         except Exception as e:
             print(f"Error updating memory COMMON_RULES: {e}")
 
+    # Update agent prompt
+    agent_prompt_path = os.path.join("mfcs-prompt", "AgentPrompt.txt")
+    agent_prompt_py_path = os.path.join("src", "mfcs", "agent_prompt.py")
+    
+    if not os.path.exists(agent_prompt_path):
+        print(f"Warning: {agent_prompt_path} not found. Skipping COMMON_RULES update.")
+    else:
+        try:
+            with open(agent_prompt_path, "r", encoding="utf-8") as f:
+                agent_prompt_content = f.read()
+                
+            with open(agent_prompt_py_path, "r", encoding="utf-8") as f:
+                agent_prompt_py_content = f.read()
+                
+            # Replace the COMMON_RULES content
+            pattern = r'(COMMON_RULES = """).*?(""")'
+            new_content = re.sub(pattern, f'\\1{agent_prompt_content}\\2', 
+                               agent_prompt_py_content, flags=re.DOTALL)
+                
+            with open(agent_prompt_py_path, "w", encoding="utf-8") as f:
+                f.write(new_content)
+                
+            print("Successfully updated COMMON_RULES with AgentPrompt.txt content")
+        except Exception as e:
+            print(f"Error updating agent COMMON_RULES: {e}")
+
 with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 

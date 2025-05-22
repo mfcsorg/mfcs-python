@@ -41,6 +41,15 @@ class MemoryCall:
     arguments: Dict[str, Any]
 
 
+@dataclass
+class AgentCall:
+    """Agent call information."""
+    instructions: str
+    agent_id: str
+    name: str
+    arguments: Dict[str, Any]
+
+
 class ResponseParser:
     """Parser for LLM response output.
     
@@ -54,26 +63,18 @@ class ResponseParser:
     MEMORY_ID_PATTERN = r"<memory_id>(.*?)</memory_id>"
     NAME_PATTERN = r"<name>(.*?)</name>"
     PARAMETERS_PATTERN = r"<parameters>\s*({.*?})\s*</parameters>"
+    AGENT_ID_PATTERN = r"<agent_id>(.*?)</agent_id>"
     
     def __init__(self):
         """Initialize the response parser."""
         pass
         
-    def parse_output(self, output: str) -> Tuple[str, List[ToolCall], List[MemoryCall]]:
-        """Parse the output to extract content, tool calls and memory calls.
-        
-        Args:
-            output: The output string to parse
-            
-        Returns:
-            Tuple containing:
-            - content: The regular content text
-            - tool_calls: List of tool calls
-            - memory_calls: List of memory calls
-        """
+    def parse_output(self, output: str) -> Tuple[str, List[ToolCall], List[MemoryCall], List[AgentCall]]:
+        """Parse the output to extract content, tool calls, memory calls, and agent calls."""
         content = ""
         tool_calls = []
         memory_calls = []
+        agent_calls = []
         
         # Split by function call markers
         parts = output.split("<mfcs_tool>")
@@ -141,9 +142,41 @@ class ResponseParser:
             else:
                 content += f"<mfcs_memory>{part}"
         
-        return content, tool_calls, memory_calls
+        # Split by agent call markers
+        parts = content.split("<mfcs_agent>")
+        content = parts[0].strip()
+        
+        # Process remaining parts for agent calls
+        for part in parts[1:]:
+            if "</mfcs_agent>" in part:
+                agent_call_str, remaining_content = part.split("</mfcs_agent>", 1)
+                try:
+                    # Extract components from XML format
+                    instructions = re.search(self.INSTRUCTIONS_PATTERN, agent_call_str, re.DOTALL)
+                    agent_id = re.search(self.AGENT_ID_PATTERN, agent_call_str)
+                    name = re.search(self.NAME_PATTERN, agent_call_str)
+                    parameters = re.search(self.PARAMETERS_PATTERN, agent_call_str, re.DOTALL)
+                    
+                    if all([instructions, agent_id, name, parameters]):
+                        agent_call = AgentCall(
+                            instructions=instructions.group(1).strip(),
+                            agent_id=agent_id.group(1).strip(),
+                            name=name.group(1).strip(),
+                            arguments=json.loads(parameters.group(1))
+                        )
+                        agent_calls.append(agent_call)
+                        content += remaining_content.strip()
+                    else:
+                        content += f"<mfcs_agent>{agent_call_str}</mfcs_agent>"
+                except (json.JSONDecodeError, AttributeError) as e:
+                    logger.warning(f"Error parsing agent call: {e}")
+                    content += f"<mfcs_agent>{agent_call_str}</mfcs_agent>"
+            else:
+                content += f"<mfcs_agent>{part}"
+        
+        return content, tool_calls, memory_calls, agent_calls
     
-    async def parse_stream_output(self, stream: AsyncGenerator[Any, None]) -> AsyncGenerator[Tuple[Optional[ChoiceDelta], Optional[Union[ToolCall, MemoryCall]], Optional[str], Optional[Usage]], None]:
+    async def parse_stream_output(self, stream: AsyncGenerator[Any, None]) -> AsyncGenerator[Tuple[Optional[ChoiceDelta], Optional[Union[ToolCall, MemoryCall, AgentCall]], Optional[str], Optional[Usage]], None]:
         """Process a stream of chat completion chunks.
         
         Args:
@@ -160,8 +193,10 @@ class ResponseParser:
         buffer = ''
         tool_buffer = ''
         memory_buffer = ''
+        agent_buffer = ''
         is_collecting_tool = False
         is_collecting_memory = False
+        is_collecting_agent = False
         usage = None
         finish_reason = None
         
@@ -200,6 +235,8 @@ class ResponseParser:
                 tool_buffer += content
             elif is_collecting_memory:
                 memory_buffer += content
+            elif is_collecting_agent:
+                agent_buffer += content
             else:
                 buffer += content
             
@@ -242,6 +279,18 @@ class ResponseParser:
                     # Process any remaining content
                     if remaining:
                         buffer = remaining
+            elif is_collecting_agent:
+                if '</mfcs_agent>' in agent_buffer:
+                    parts = agent_buffer.split('</mfcs_agent>', 1)
+                    agent_content = parts[0]
+                    remaining = parts[1] if len(parts) > 1 else ''
+                    agent_call = self._parse_xml_agent(agent_content)
+                    if agent_call:
+                        yield None, agent_call, None, None
+                    is_collecting_agent = False
+                    agent_buffer = ''
+                    if remaining:
+                        buffer = remaining
             else:
                 # Check for start of tool call or memory
                 if '<mfcs_tool>' in buffer:
@@ -265,6 +314,13 @@ class ResponseParser:
                     # Start collecting memory
                     is_collecting_memory = True
                     memory_buffer = parts[1] if len(parts) > 1 else ''
+                    buffer = ''
+                elif '<mfcs_agent>' in buffer:
+                    parts = buffer.split('<mfcs_agent>', 1)
+                    if parts[0].strip():
+                        yield ChoiceDelta(content=parts[0].strip(), finish_reason=None), None, None, None
+                    is_collecting_agent = True
+                    agent_buffer = parts[1] if len(parts) > 1 else ''
                     buffer = ''
                 else:
                     # Optimization: Check if it contains the start of a special marker
@@ -380,6 +436,34 @@ class ResponseParser:
             logger.error(f"Error parsing memory details: {e}")
             return None
             
+    def _parse_xml_agent(self, text: str) -> Optional[AgentCall]:
+        """Parse an XML format agent call.
+        Args:
+            text: The agent call text to parse
+        Returns:
+            Optional[AgentCall]: The parsed agent call or None if invalid
+        """
+        try:
+            components = self._extract_xml_components(
+                text,
+                instructions_pattern=self.INSTRUCTIONS_PATTERN,
+                id_pattern=self.AGENT_ID_PATTERN,
+                name_pattern=self.NAME_PATTERN,
+                parameters_pattern=self.PARAMETERS_PATTERN
+            )
+            if not components:
+                return None
+            instructions, id_value, name, parameters = components
+            return AgentCall(
+                instructions=instructions,
+                agent_id=id_value,
+                name=name,
+                arguments=parameters
+            )
+        except Exception as e:
+            logger.error(f"Error parsing agent details: {e}")
+            return None
+
     def _extract_xml_components(
         self, 
         text: str, 

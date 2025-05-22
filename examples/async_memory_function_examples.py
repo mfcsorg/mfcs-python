@@ -157,4 +157,4 @@ async def main():
     await example_async_memory_function()
 
 if __name__ == "__main__":
-    asyncio.run(main()) 
+    asyncio.run(main())

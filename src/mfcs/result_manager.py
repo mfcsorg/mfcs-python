@@ -19,9 +19,11 @@ class ResultManager:
     """
     
     tool_results: Dict[str, Any] = field(default_factory=dict)
+    tool_names: Dict[str, str] = field(default_factory=dict)
     memory_results: Dict[str, Any] = field(default_factory=dict)
-    function_names: Dict[str, str] = field(default_factory=dict)
     memory_names: Dict[str, str] = field(default_factory=dict)
+    agent_results: Dict[str, Any] = field(default_factory=dict)
+    agent_names: Dict[str, str] = field(default_factory=dict)
     
     def add_tool_result(self, name: str, result: Any, call_id: str) -> None:
         """
@@ -39,7 +41,7 @@ class ResultManager:
             raise ValueError("call_id and name cannot be empty")
             
         self.tool_results[call_id] = result
-        self.function_names[call_id] = name
+        self.tool_names[call_id] = name
     
     def add_memory_result(self, name: str, result: Any, memory_id: str) -> None:
         """
@@ -59,6 +61,21 @@ class ResultManager:
         self.memory_results[memory_id] = result
         self.memory_names[memory_id] = name
     
+    def add_agent_result(self, name: str, result: Any, agent_id: str) -> None:
+        """
+        Add an agent result.
+        Args:
+            name: Type of agent name
+            result: The result of the agent operation
+            agent_id: ID of the agent operation
+        Raises:
+            ValueError: If agent_id is empty or name is empty
+        """
+        if not agent_id or not name:
+            raise ValueError("agent_id and name cannot be empty")
+        self.agent_results[agent_id] = result
+        self.agent_names[agent_id] = name
+    
     def get_tool_results(self) -> str:
         """Get and format tool results for MFCS, then clear the results.
         
@@ -70,9 +87,9 @@ class ResultManager:
         
         formatted: List[str] = ["<tool_result>"]
         for call_id, result in self.tool_results.items():
-            function_name = self.function_names.get(call_id, "unknown")
+            tool_name = self.tool_names.get(call_id, "unknown")
             result_str = self._convert_to_string(result)
-            formatted.append(f"{{call_id: {call_id}, name: {function_name}}} {result_str}")
+            formatted.append(f"{{call_id: {call_id}, name: {tool_name}}} {result_str}")
         formatted.append("</tool_result>")
         
         # Clear results after formatting
@@ -101,6 +118,22 @@ class ResultManager:
         
         return "\n".join(formatted)
     
+    def get_agent_results(self) -> str:
+        """Get and format agent results for MFCS, then clear the results.
+        Returns:
+            Formatted string of agent results
+        """
+        if not self.agent_results:
+            return ""
+        formatted: List[str] = ["<agent_result>"]
+        for agent_id, result in self.agent_results.items():
+            name = self.agent_names.get(agent_id, "unknown")
+            result_str = self._convert_to_string(result)
+            formatted.append(f"{{agent_id: {agent_id}, name: {name}}} {result_str}")
+        formatted.append("</agent_result>")
+        self._clear_agent_results()
+        return "\n".join(formatted)
+    
     def _convert_to_string(self, result: Any) -> str:
         """
         Convert any result to a string representation.
@@ -124,12 +157,17 @@ class ResultManager:
     def _clear_tool_results(self) -> None:
         """Clear all tool results."""
         self.tool_results.clear()
-        self.function_names.clear()
+        self.tool_names.clear()
     
     def _clear_memory_results(self) -> None:
         """Clear all memory results."""
         self.memory_results.clear()
         self.memory_names.clear()
+    
+    def _clear_agent_results(self) -> None:
+        """Clear all agent results."""
+        self.agent_results.clear()
+        self.agent_names.clear()
         
     def get_tool_result(self, call_id: str) -> Optional[Any]:
         """
@@ -154,3 +192,13 @@ class ResultManager:
             The memory result if found, None otherwise
         """
         return self.memory_results.get(memory_id)
+    
+    def get_agent_result(self, agent_id: str) -> Optional[Any]:
+        """
+        Get a specific agent result by agent_id.
+        Args:
+            agent_id: The ID of the agent operation
+        Returns:
+            The agent result if found, None otherwise
+        """
+        return self.agent_results.get(agent_id)

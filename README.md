@@ -187,9 +187,9 @@ memory_apis = [
 template = MemoryPromptGenerator.generate_memory_prompt(memory_apis)
 ```
 
-### 5. Result Management System
+### 5. Result Management
 
-The Result Management System provides a unified way to handle and format results from both tool calls and memory operations.
+The Result Management provides a unified way to handle and format results from both tool calls and memory operations.
 
 ```python
 from mfcs.result_manager import ResultManager
@@ -227,77 +227,70 @@ memory_results = result_manager.get_memory_results()
 
 ## Examples
 
-Check out the `examples` directory for detailed examples:
+### Function Calling Examples
 
-- `function_calling_examples.py`: Basic function calling examples
-  - Function prompt generation
-  - Function call parsing
-  - Result management
+Demonstrates basic and async function calling with MFCS.
 
-- `async_function_calling_examples.py`: Async streaming examples
-  - Real-time streaming processing
-  - Multiple function call handling
-  - Usage statistics tracking
-
-- `memory_function_examples.py`: Memory management examples
-  - Memory prompt generation
-  - Memory operation handling
-  - Memory result management
-
-- `mcp_client_example.py`: Model Control Protocol examples
-  - MCP client implementation
-  - MCP tool management
-  - MCP response handling
-
-- `async_mcp_client_example.py`: Async MCP examples
-  - Async MCP client implementation
-  - Async MCP tool management
-  - Async MCP response handling
-
-- `memory_function_examples.py`: Memory function examples
-  - Memory prompt generation
-  - Memory operations
-  - Memory context management
-
-- `async_memory_function_examples.py`: Async memory examples
-  - Async memory operations
-  - Async memory context management
-  - Async memory persistence
-
-Run the examples to see the library in action:
-
+To run the basic example:
 ```bash
-# Run basic examples
 python examples/function_calling_examples.py
-
-# Run async examples
+```
+To run the async example:
+```bash
 python examples/async_function_calling_examples.py
+```
 
-# Run MCP examples
-python examples/mcp_client_example.py
+### Memory Function Examples
 
-# Run async MCP examples
-python examples/async_mcp_client_example.py
+Demonstrates memory prompt usage and async memory functions.
 
-# Run memory examples
+To run the memory example:
+```bash
 python examples/memory_function_examples.py
-
-# Run async memory examples
+```
+To run the async memory example:
+```bash
 python examples/async_memory_function_examples.py
+```
+
+### A2A (Agent-to-Agent) Communication Examples
+
+Demonstrates how to use MFCS for agent-to-agent communication.
+
+To run the server example:
+```bash
+python examples/a2a_server_example.py
+```
+To run the async client example:
+```bash
+python examples/async_a2a_client_example.py
+```
+
+### MCP Client Examples
+
+Demonstrates MCP client usage (sync and async).
+
+To run the MCP client example:
+```bash
+python examples/mcp_client_example.py
+```
+To run the async MCP client example:
+```bash
+python examples/async_mcp_client_example.py
 ```
 
 ## Notes
 
-- The library requires Python 3.8+ for async features
+- Async features require Python 3.8+
 - Make sure to handle API keys and sensitive information securely
-- For production use, replace simulated API calls with actual implementations
-- Follow the tool calling rules in the prompt template
-- Use unique call_ids for each function call
+- Replace simulated API calls with actual implementations in production
+- Follow the tool call rules in the prompt templates
+- Use a unique `call_id` for each function call
 - Provide clear instructions for each function call
-- Handle errors and resource cleanup in async streaming processing
+- Pay attention to error handling and resource cleanup in async streaming
 - Use `ResultManager` to manage results from multiple function calls
-- Handle exceptions and timeouts properly in async context
-- Use `MemoryPromptManager` for managing conversation context
+- Handle exceptions and timeouts properly in async contexts
+- Use `MemoryPromptManager` to manage conversation context
 
 ## System Requirements
 
@@ -305,4 +298,4 @@ python examples/async_memory_function_examples.py
 
 ## License
 
-MIT License 
+MIT License

@@ -48,6 +48,28 @@ cd examples
 pip install -r requirements.txt
 ```
 
+## 示例说明
+
+`examples` 目录包含：
+- **函数调用示例**：  
+  - `function_calling_examples.py`  
+    展示 MFCS 的基础函数调用。
+  - `async_function_calling_examples.py`  
+    展示异步函数调用。
+- **记忆函数示例**：  
+  - `memory_function_examples.py`  
+    展示记忆提示的用法。
+  - `async_memory_function_examples.py`  
+    记忆函数的异步用法。
+- **A2A（Agent-to-Agent）通信示例**：  
+  - `a2a_server_example.py`  
+    智能体通信服务端示例。
+  - `async_a2a_client_example.py`  
+    智能体通信异步客户端示例。
+- **MCP 客户端示例**：  
+  - `mcp_client_example.py`, `async_mcp_client_example.py`  
+    展示 MCP 客户端的用法。
+
 ## 使用方法
 
 ### 1. 生成函数调用提示模板
@@ -187,9 +209,9 @@ memory_apis = [
 template = MemoryPromptGenerator.generate_memory_prompt(memory_apis)
 ```
 
-### 5. 结果管理系统
+### 5. 结果管理
 
-结果管理系统提供了一种统一的方式来处理和格式化 LLM 交互中的工具调用和记忆操作结果。它确保结果处理的一致性和适当的清理机制。
+结果管理提供了一种统一的方式来处理和格式化 LLM 交互中的工具调用和记忆操作结果。它确保结果处理的一致性和适当的清理机制。
 
 ```python
 from mfcs.result_manager import ResultManager
@@ -227,63 +249,56 @@ memory_results = result_manager.get_memory_results()
 
 ## 示例
 
-查看 `examples` 目录获取详细示例：
+### 函数调用示例
 
-- `function_calling_examples.py`：基本函数调用示例
-  - 函数提示生成
-  - 函数调用解析
-  - 结果管理
+展示 MFCS 的基础和异步函数调用。
 
-- `async_function_calling_examples.py`：异步流式处理示例
-  - 实时流式处理
-  - 多函数调用处理
-  - 使用统计跟踪
-
-- `memory_function_examples.py`：记忆管理示例
-  - 记忆提示生成
-  - 记忆操作处理
-  - 记忆结果管理
-
-- `mcp_client_example.py`：模型控制协议示例
-  - MCP 客户端实现
-  - MCP 工具管理
-  - MCP 响应处理
-
-- `async_mcp_client_example.py`：异步 MCP 示例
-  - 异步 MCP 客户端实现
-  - 异步 MCP 工具管理
-  - 异步 MCP 响应处理
-
-- `memory_function_examples.py`：记忆函数示例
-  - 记忆提示生成
-  - 记忆操作
-  - 记忆上下文管理
-
-- `async_memory_function_examples.py`：异步记忆示例
-  - 异步记忆操作
-  - 异步记忆上下文管理
-  - 异步记忆持久化
-
-运行示例以查看库的实际效果：
-
+运行基础示例：
 ```bash
-# 运行基本示例
 python examples/function_calling_examples.py
-
-# 运行异步示例
+```
+运行异步示例：
+```bash
 python examples/async_function_calling_examples.py
+```
 
-# 运行 MCP 示例
-python examples/mcp_client_example.py
+### 记忆函数示例
 
-# 运行异步 MCP 示例
-python examples/async_mcp_client_example.py
+展示记忆提示用法和异步记忆函数。
 
-# 运行记忆示例
+运行记忆示例：
+```bash
 python examples/memory_function_examples.py
-
-# 运行异步记忆示例
+```
+运行异步记忆示例：
+```bash
 python examples/async_memory_function_examples.py
+```
+
+### A2A（Agent-to-Agent）通信示例
+
+展示如何使用 MFCS 实现智能体间通信。
+
+运行服务端：
+```bash
+python examples/a2a_server_example.py
+```
+运行异步客户端：
+```bash
+python examples/async_a2a_client_example.py
+```
+
+### MCP 客户端示例
+
+展示 MCP 客户端（同步与异步）用法。
+
+运行 MCP 客户端示例：
+```bash
+python examples/mcp_client_example.py
+```
+运行异步 MCP 客户端示例：
+```bash
+python examples/async_mcp_client_example.py
 ```
 
 ## 注意事项
