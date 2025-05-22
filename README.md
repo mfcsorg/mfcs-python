@@ -207,7 +207,7 @@ print(f"Agent calls: {agent_calls}")
 ### 2.2 Async Streaming Processing for Function, Memory, and Agent Calls
 
 ```python
-from mfcs.response_parser import ResponseParser
+from mfcs.response_parser import ResponseParser, ToolCall, MemoryCall, AgentCall
 from mfcs.result_manager import ResultManager
 import json
 

@@ -230,7 +230,7 @@ print(f"Agent 调用: {agent_calls}")
 ### 2.2 异步流式处理函数、记忆、Agent 调用
 
 ```python
-from mfcs.response_parser import ResponseParser
+from mfcs.response_parser import ResponseParser, ToolCall, MemoryCall, AgentCall
 from mfcs.result_manager import ResultManager
 import json
 
