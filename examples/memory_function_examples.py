@@ -86,7 +86,7 @@ def example_memory_function():
     result_manager = ResultManager()
     
     # Parse the response
-    content, tool_calls, memory_calls = response_parser.parse_output(response.choices[0].message.content)
+    content, tool_calls, memory_calls, agent_calls = response_parser.parse_output(response.choices[0].message.content)
     
     # Print reasoning content if present
     if response.choices[0].message.reasoning_content:

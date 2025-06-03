@@ -85,7 +85,7 @@ async def run():
             
             # Parse the function calls using ResponseParser
             response_parser = ResponseParser()
-            content, tool_calls, memory_calls = response_parser.parse_output(content)
+            content, tool_calls, memory_calls, agent_calls = response_parser.parse_output(content)
 
             # Print reasoning content if present
             if response.choices[0].message.reasoning_content:
@@ -114,11 +114,11 @@ async def run():
                     result=result.content,
                     call_id=tool_call.call_id
                 )
-            
+
             # Print results
             print("\nTool Results:")
             print(result_manager.get_tool_results())
-            
+
             print("\nMemory Calls:")
             if memory_calls:
                 for memory_call in memory_calls:
@@ -134,10 +134,20 @@ async def run():
                     result=result.content,
                     memory_id=memory_call.memory_id
                 )
-            
+
             # Print results
             print("\nMemory Results:")
             print(result_manager.get_memory_results())
+
+            print("\nAgent Calls:")
+            if agent_calls:
+                for agent_call in agent_calls:
+                    print(f"Function: {agent_call.name}")
+                    print(f"Arguments: {json.dumps(agent_call.arguments, indent=2)}")
+
+            # Print results
+            print("\nAgent Results:")
+            print(result_manager.get_agent_results())
 
 
 if __name__ == "__main__":

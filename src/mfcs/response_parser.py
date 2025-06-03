@@ -223,7 +223,7 @@ class ResponseParser:
                     total_tokens=getattr(chunk.usage, 'total_tokens', 0)
                 )
                 
-            if not content and not reasoning_content:
+            if content is None and reasoning_content is None:
                 continue
                 
             # First yield reasoning_content if present
@@ -297,8 +297,8 @@ class ResponseParser:
                     parts = buffer.split('<mfcs_tool>', 1)
                     
                     # Output content before tool call
-                    if parts[0].strip():
-                        yield ChoiceDelta(content=parts[0].strip(), finish_reason=None), None, None, None
+                    if parts[0]:
+                        yield ChoiceDelta(content=parts[0], finish_reason=None), None, None, None
                     
                     # Start collecting tool call
                     is_collecting_tool = True
@@ -308,8 +308,8 @@ class ResponseParser:
                     parts = buffer.split('<mfcs_memory>', 1)
                     
                     # Output content before memory
-                    if parts[0].strip():
-                        yield ChoiceDelta(content=parts[0].strip(), finish_reason=None), None, None, None
+                    if parts[0]:
+                        yield ChoiceDelta(content=parts[0], finish_reason=None), None, None, None
                     
                     # Start collecting memory
                     is_collecting_memory = True
@@ -317,8 +317,8 @@ class ResponseParser:
                     buffer = ''
                 elif '<mfcs_agent>' in buffer:
                     parts = buffer.split('<mfcs_agent>', 1)
-                    if parts[0].strip():
-                        yield ChoiceDelta(content=parts[0].strip(), finish_reason=None), None, None, None
+                    if parts[0]:
+                        yield ChoiceDelta(content=parts[0], finish_reason=None), None, None, None
                     is_collecting_agent = True
                     agent_buffer = parts[1] if len(parts) > 1 else ''
                     buffer = ''
@@ -328,13 +328,13 @@ class ResponseParser:
                         # If it contains < symbol, it might be the start of a special marker, keep it in buffer
                         continue
                     # Otherwise output content immediately
-                    if buffer.strip():
-                        yield ChoiceDelta(content=buffer.strip(), finish_reason=None), None, None, None
+                    if buffer:
+                        yield ChoiceDelta(content=buffer, finish_reason=None), None, None, None
                         buffer = ''
 
         # Yield any remaining content in buffer
-        if buffer.strip():
-            yield ChoiceDelta(content=buffer.strip(), finish_reason=None), None, None, None
+        if buffer:
+            yield ChoiceDelta(content=buffer, finish_reason=None), None, None, None
             
         # Yield finish reason at the end if available
         if finish_reason:
