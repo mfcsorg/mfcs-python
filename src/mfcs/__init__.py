@@ -3,7 +3,7 @@ Function calling module for MFCS.
 """
 from .memory_prompt import MemoryPromptGenerator
 from .function_prompt import FunctionPromptGenerator
-from .response_parser import ResponseParser, ChoiceDelta, ToolCall, MemoryCall, Usage
+from .response_parser import ResponseParser, ChoiceDelta, ToolCall, MemoryCall, Usage, AgentCall
 from .result_manager import ResultManager
 
 __all__ = [
@@ -12,5 +12,8 @@ __all__ = [
     'ResponseParser',
     'ResultManager',
     'ToolCall',
-    'MemoryCall'
+    'MemoryCall',
+    'AgentCall',
+    'ChoiceDelta',
+    'Usage'
 ]
