@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "mfcs"
-version = "0.1.8"
+version = "0.1.9"
 description = "A Python library for function calling in LLMs"
 readme = "README.md"
 requires-python = ">=3.8"
@@ -12,6 +12,7 @@ license = "MIT"
 authors = [
     { name = "shideqin", email = "shisdq@gmail.com" }
 ]
+keywords = ["llm", "function-calling", "prompt-engineering", "ai", "nlp"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",

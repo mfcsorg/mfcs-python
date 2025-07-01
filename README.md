@@ -328,6 +328,15 @@ agent_results = result_manager.get_agent_results()
 
 ## Examples
 
+### Agent Prompt Benchmark Test
+
+Tests the complete functionality of Agent Prompt, including preventing unnecessary tool calls and validating tool name correctness.
+
+To run the benchmark test:
+```bash
+python examples/agent_prompt_bench.py
+```
+
 ### Function Calling Examples
 
 Demonstrates basic and async function calling with MFCS.

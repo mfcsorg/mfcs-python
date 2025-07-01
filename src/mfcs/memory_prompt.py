@@ -62,7 +62,6 @@ Example:
 4. Personalized Responses: Adjust response tone, style, and content based on memory content.
 5. Progressive Learning: Continuously enrich and optimize user profiles through ongoing conversations.
 6. Privacy Protection: Handle sensitive information carefully, ensure user data security.
-
 </memory_calling>
 """
 
@@ -134,7 +133,7 @@ Example:
         memory_apis_str = json.dumps(normalized_memory_apis, ensure_ascii=False)
 
         # format-specific instructions
-        template = f'{cls._get_format_instructions()}\n'
+        template = f'{cls._get_format_instructions()}'
 
         # Build the template
         template += "<memory_list>\n"

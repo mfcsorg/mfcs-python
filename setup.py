@@ -82,34 +82,8 @@ def update_common_rules():
         except Exception as e:
             print(f"Error updating agent COMMON_RULES: {e}")
 
-with open("README.md", "r", encoding="utf-8") as fh:
-    long_description = fh.read()
-
 # Update COMMON_RULES before setup
 update_common_rules()
 
-setup(
-    name="mfcs",
-    version="0.1.8",
-    author="shideqin",
-    author_email="shisdq@gmail.com",
-    description="A Python library for handling function calling in Large Language Models (LLMs)",
-    long_description=long_description,
-    long_description_content_type="text/markdown",
-    url="https://github.com/mfcsorg/mfcs-python",
-    packages=find_packages(where="src"),
-    package_dir={"": "src"},
-    classifiers=[
-        "Development Status :: 3 - Alpha",
-        "Intended Audience :: Developers",
-        "License :: OSI Approved :: MIT License",
-        "Operating System :: OS Independent",
-        "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.8",
-        "Programming Language :: Python :: 3.9",
-        "Programming Language :: Python :: 3.10",
-        "Programming Language :: Python :: 3.11",
-    ],
-    python_requires=">=3.8",
-    keywords="llm, function-calling, prompt-engineering, ai, nlp",
-) 
+# 使用pyproject.toml中的配置，这里只提供基本的setup调用
+setup() 

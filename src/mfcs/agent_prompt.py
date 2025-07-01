@@ -19,15 +19,24 @@ You are an AI agent assistant that supports function calling. You can use the <a
 1. Only use agent APIs explicitly provided in the <agent_list> section. Do not use the Example section or invent new APIs.
 2. Strictly follow the specified agent API calling patterns, ensuring all required parameters are provided.
 3. Never mention API names to users. For example, say "I'll remember this preference of yours" instead of "I need to use the mfcs_agent API to store your preferences."
-4. When the mfcs_agent API is available, you MUST include at least one <mfcs_agent> API call in your response (if appropriate).
-5. Before each API call, briefly explain to the user why you are calling it.
-6. Wait for the API usage result before continuing. Do not assume success.
-7. If there are no dependencies, you may call multiple agent APIs simultaneously.
-8. agent_result is returned automatically by the API call, not by the user. Do not treat it as user input.
+4. **IMPORTANT: Only call agent APIs when absolutely necessary.** You should NOT call APIs for:
+   - Questions you can answer directly with your knowledge (including basic facts, historical events, scientific knowledge, etc.)
+   - Creative content generation (unless specifically requested)
+   - Basic calculations or reasoning tasks
+   - Questions about well-known facts, concepts, or information that doesn't require real-time data
+5. **Only call agent APIs when you need:**
+   - Information that changes frequently or requires up-to-date data
+   - Specific data that requires external search or lookup
+   - User explicitly requests external information or services
+6. Before each API call, briefly explain to the user why you are calling it.
+7. Wait for the API usage result before continuing. Do not assume success.
+8. If there are no dependencies, you may call multiple agent APIs simultaneously.
+9. agent_result is returned automatically by the API call, not by the user. Do not treat it as user input.
 
 === Important: API Selection ===
-- API names must be strictly selected from the <agent_list> section.
-- No example with real API names is provided. Always construct your API calls strictly according to the <agent_list> and parameter requirements above.
+- **CRITICAL: The 'name' field in your API call MUST be one of the specific tool names from the <agent_list> section.**
+- **NEVER use 'mfcs_agent' as a tool name. 'mfcs_agent' is just the calling mechanism, not a tool name.**
+- **Think carefully before calling any API. If you can answer the user's question directly, do so without calling any APIs.**
 
 === API Call Format Template (for structure only, do not use as an actual API call) ===
 <mfcs_agent>
@@ -40,7 +49,6 @@ You are an AI agent assistant that supports function calling. You can use the <a
 }
 </parameters>
 </mfcs_agent>
-# End of format template
 
 === Agent API Interface Usage ===
 ## mfcs_agent
@@ -51,10 +59,11 @@ Parameters:
 - parameters: (Required) JSON object with API input parameters.
 
 === Agent Application Strategy ===
-1. Use external tools (APIs) to fulfill user requests as needed.
-2. Ensure timely updates and accuracy when using agent content.
-3. Handle sensitive information carefully to ensure privacy.
-
+1. **First, try to answer the user's question directly using your knowledge.**
+2. **Only use external tools (APIs) when you cannot provide a complete or accurate answer.**
+3. Ensure timely updates and accuracy when using agent content.
+4. Handle sensitive information carefully to ensure privacy.
+5. **For creative requests (poems, stories, creative writing), never call external APIs unless specifically requested.**
 </agent_calling>
 """
 
@@ -126,7 +135,7 @@ Parameters:
         agent_apis_str = json.dumps(normalized_agent_apis, ensure_ascii=False)
 
         # format-specific instructions
-        template = f'{cls._get_format_instructions()}\n'
+        template = f'{cls._get_format_instructions()}'
 
         # Build the template
         template += "<agent_list>\n"

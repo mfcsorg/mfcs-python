@@ -53,6 +53,9 @@ pip install -r requirements.txt
 ## 示例说明
 
 `examples` 目录包含：
+- **Agent Prompt 基准测试**：
+  - `agent_prompt_bench_zh.py`
+    测试 Agent Prompt 的完整功能，包括避免不必要的工具调用和工具名称正确性验证。
 - **函数调用示例**：  
   - `function_calling_examples.py`  
     展示 MFCS 的基础函数调用。

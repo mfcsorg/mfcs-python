@@ -48,7 +48,6 @@ Example:
 1. The name in mfcs_tool can only be selected from the tool list, cannot be self-generated.
 2. You should not generate tool_result content. do not assume tool execution result.
 3. Do not put tool calls in markdown.
-
 </tool_calling>
 """
 
@@ -120,7 +119,7 @@ Example:
         functions_str = json.dumps(normalized_functions, ensure_ascii=False)
 
         # format-specific instructions
-        template = f'{cls._get_format_instructions()}\n'
+        template = f'{cls._get_format_instructions()}'
 
         # Build the template
         template += "<tool_list>\n"
