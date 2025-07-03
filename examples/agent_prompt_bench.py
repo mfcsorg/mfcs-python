@@ -36,7 +36,7 @@ agent_apis = [
             "required": ["content"]
         }, 
         "name": "elder_film_service_685c9b642de60791fbd5c7d2", 
-        "description": "A professional cinema guide with extensive film knowledge, able to provide users with comprehensive movie viewing guidance and services in a clear, vivid, and easy-to-understand manner, allowing everyone to fully immerse themselves in the wonderful world of movies."
+        "description": "A professional cinema guide with extensive film knowledge, able to recommend suitable movies, answer various movie-related questions, and provide comprehensive movie viewing guidance and services in a clear, vivid, and easy-to-understand manner. Whether you want to watch a movie, seek viewing advice, or learn about movie content, this tool can help you fully enjoy the wonderful world of movies."
     },
     {
         "parameters": {
@@ -64,7 +64,7 @@ agent_apis = [
             "required": ["content"]
         }, 
         "name": "news_access_service_685c9b5c2de60791fbd5c7cc", 
-        "description": "Provides news content broadcasting services, including news events, social trends, financial news, cultural activities, sports news, technology news, and other types of information, with detailed content, background information, and related interpretations. Suitable for queries about current news content. News broadcasting only, no search service."
+        "description": "Provides news content broadcasting and information interpretation services, covering various news events such as society, finance, stock market, culture, sports, and technology. Suitable for queries about news reports, background information, and event interpretation. Note: This tool is only for news content and is not suitable for real-time data, the latest figures, or instant market data queries. For real-time data or the latest market information, please use the search service."
     },
     {
         "parameters": {
@@ -78,7 +78,7 @@ agent_apis = [
             "required": ["content"]
         }, 
         "name": "elder_search_685c9b5f2de60791fbd5c7ce", 
-        "description": "Finds specific information that requires real-time access or search, including but not limited to: real-time data queries (weather, traffic, etc.), operational guidance, answers to knowledge points that require external search, website information, etc. Suitable for queries that cannot be answered directly and require the latest, accurate, and specific answers."
+        "description": "Provides real-time information and data retrieval services, suitable for queries that require the latest figures, real-time statistics, or external data, such as stock market data, weather, traffic, and the latest market information. Note: This tool is dedicated to obtaining real-time data, figures, and the latest market information, and is not suitable for news reports, information interpretation, or news content broadcasting. For news content, please use the news broadcasting service."
     }
 ]
 
