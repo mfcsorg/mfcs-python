@@ -43,9 +43,9 @@ You are an AI agent assistant that supports function calling. You can use the <a
 === API Call Format Template (for structure only, do not use as an actual API call) ===
 <mfcs_agent>
   <instructions>action description</instructions>
-  <agent_id>tool_id</agent_id>
-  <name>tool_name</name>
-  <parameters>{"key":"value"}</parameters>
+  <agent_id>tool index</agent_id>
+  <name>tool name</name>
+  <parameters>{"key1":"value1","key2":"value2"}</parameters>
 </mfcs_agent>
 
 === Agent API Interface Usage ===
