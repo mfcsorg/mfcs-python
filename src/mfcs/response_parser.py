@@ -69,8 +69,20 @@ class ResponseParser:
         """Initialize the response parser."""
         pass
         
-    def parse_output(self, output: str) -> Tuple[str, List[ToolCall], List[MemoryCall], List[AgentCall]]:
-        """Parse the output to extract content, tool calls, memory calls, and agent calls."""
+    def parse_output(self, output: str) -> Tuple[str, List[ToolCall], List[MemoryCall], List[AgentCall], str]:
+        """Parse the output to extract content, tool calls, memory calls, and agent calls.
+        
+        Returns:
+            Tuple containing:
+            - content: Parsed content without function call markers
+            - tool_calls: List of ToolCall objects
+            - memory_calls: List of MemoryCall objects
+            - agent_calls: List of AgentCall objects
+            - original_output: The original unprocessed output
+        """
+        # Save original output
+        original_output = output
+        
         content = ""
         tool_calls = []
         memory_calls = []
@@ -174,21 +186,22 @@ class ResponseParser:
             else:
                 content += f"<mfcs_agent>{part}"
         
-        return content, tool_calls, memory_calls, agent_calls
+        return content, tool_calls, memory_calls, agent_calls, original_output
     
-    async def parse_stream_output(self, stream: AsyncGenerator[Any, None]) -> AsyncGenerator[Tuple[Optional[ChoiceDelta], Optional[Union[ToolCall, MemoryCall, AgentCall]], Optional[str], Optional[Usage]], None]:
+    async def parse_stream_output(self, stream: AsyncGenerator[Any, None]) -> AsyncGenerator[Tuple[Optional[ChoiceDelta], Optional[Union[ToolCall, MemoryCall, AgentCall]], Optional[str], Optional[Usage], Optional[str]], None]:
         """Process a stream of chat completion chunks.
         
         Args:
             stream: Async generator yielding chat completion chunks
             
         Returns:
-            Async generator yielding tuples of (content, call_info, reasoning_content, usage)
+            Async generator yielding tuples of (choice_delta, call_info, reasoning_content, usage, original_content)
             where:
             - choice_delta: Either None, a ChoiceDelta
-            - call_info: Either None, a ToolCall, or a MemoryCall
+            - call_info: Either None, a ToolCall, MemoryCall, or AgentCall
             - reasoning_content: The reasoning content if present, None otherwise
             - usage: Usage statistics if present, None otherwise
+            - original_content: The original unprocessed content delta from the stream, None otherwise
         """
         buffer = ''
         tool_buffer = ''
@@ -225,10 +238,14 @@ class ResponseParser:
                 
             if content is None and reasoning_content is None:
                 continue
-                
+            
             # First yield reasoning_content if present
             if reasoning_content:
-                yield None, None, reasoning_content, None
+                yield None, None, reasoning_content, None, None
+            
+            # Yield original content immediately (for real-time streaming)
+            if content:
+                yield None, None, None, None, content
                 
             # Add current content to appropriate buffer
             if is_collecting_tool:
@@ -251,7 +268,7 @@ class ResponseParser:
                     # Parse the tool call
                     tool_call = self._parse_xml_tool_call(tool_content)
                     if tool_call:
-                        yield None, tool_call, None, None
+                        yield None, tool_call, None, None, None
                     
                     # Reset tool collection state
                     is_collecting_tool = False
@@ -270,7 +287,7 @@ class ResponseParser:
                     # Parse the memory content
                     memory_call = self._parse_xml_memory(memory_content)
                     if memory_call:
-                        yield None, memory_call, None, None
+                        yield None, memory_call, None, None, None
                     
                     # Reset memory collection state
                     is_collecting_memory = False
@@ -286,7 +303,7 @@ class ResponseParser:
                     remaining = parts[1] if len(parts) > 1 else ''
                     agent_call = self._parse_xml_agent(agent_content)
                     if agent_call:
-                        yield None, agent_call, None, None
+                        yield None, agent_call, None, None, None
                     is_collecting_agent = False
                     agent_buffer = ''
                     if remaining:
@@ -298,7 +315,7 @@ class ResponseParser:
                     
                     # Output content before tool call
                     if parts[0]:
-                        yield ChoiceDelta(content=parts[0], finish_reason=None), None, None, None
+                        yield ChoiceDelta(content=parts[0], finish_reason=None), None, None, None, None
                     
                     # Start collecting tool call
                     is_collecting_tool = True
@@ -309,7 +326,7 @@ class ResponseParser:
                     
                     # Output content before memory
                     if parts[0]:
-                        yield ChoiceDelta(content=parts[0], finish_reason=None), None, None, None
+                        yield ChoiceDelta(content=parts[0], finish_reason=None), None, None, None, None
                     
                     # Start collecting memory
                     is_collecting_memory = True
@@ -318,7 +335,7 @@ class ResponseParser:
                 elif '<mfcs_agent>' in buffer:
                     parts = buffer.split('<mfcs_agent>', 1)
                     if parts[0]:
-                        yield ChoiceDelta(content=parts[0], finish_reason=None), None, None, None
+                        yield ChoiceDelta(content=parts[0], finish_reason=None), None, None, None, None
                     is_collecting_agent = True
                     agent_buffer = parts[1] if len(parts) > 1 else ''
                     buffer = ''
@@ -329,20 +346,20 @@ class ResponseParser:
                         continue
                     # Otherwise output content immediately
                     if buffer:
-                        yield ChoiceDelta(content=buffer, finish_reason=None), None, None, None
+                        yield ChoiceDelta(content=buffer, finish_reason=None), None, None, None, None
                         buffer = ''
 
         # Yield any remaining content in buffer
         if buffer:
-            yield ChoiceDelta(content=buffer, finish_reason=None), None, None, None
+            yield ChoiceDelta(content=buffer, finish_reason=None), None, None, None, None
             
         # Yield finish reason at the end if available
         if finish_reason:
-            yield ChoiceDelta(content=None, finish_reason=finish_reason), None, None, None
+            yield ChoiceDelta(content=None, finish_reason=finish_reason), None, None, None, None
             
         # Yield usage information at the end if available
         if usage:
-            yield None, None, None, usage
+            yield None, None, None, usage, None
     
     def _parse_xml_tool_call(self, text: str) -> Optional[ToolCall]:
         """Parse an XML format tool call.
